@@ -81,7 +81,7 @@ internal class SourceGenerator {
                 yield return Line;
             }
         } else {
-            Debug.WriteLine($"No matches found in {Line}.");
+            //Debug.WriteLine($"No matches found in {Line}.");
             yield return Line;
         }
     }

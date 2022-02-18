@@ -437,7 +437,7 @@ public static class Extensions {
     }
 
     /// <summary>
-    /// Trims the specified characters from the end of the string.
+    /// Trims the specified number of characters from the end of the string.
     /// </summary>
     /// <param name="String">The string to trim.</param>
     /// <param name="Chars">The amount of characters to remove. If greater than the length of the string, <see cref="string.Empty"/> is returned instead.</param>
@@ -446,6 +446,14 @@ public static class Extensions {
         int Ln = String.Length;
         return Chars >= Ln ? string.Empty : String[..(Ln - Chars)];
     }
+
+    /// <summary>
+    /// Trims the specified number of characters from the start of the string.
+    /// </summary>
+    /// <param name="String">The string to trim.</param>
+    /// <param name="Chars">The amount of characters to remove. If greater than the length of the string, <see cref="string.Empty"/> is returned instead.</param>
+    /// <returns>The truncated string.</returns>
+    public static string TrimStart( this string String, int Chars ) => Chars <= 0 ? String : Chars > String.Length ? string.Empty : String[Chars..];
 
     /// <summary>
     /// Iterates all children nodes from the given point in the tree.
@@ -591,6 +599,7 @@ public static class Extensions {
         "//     Changes to this file may cause incorrect behaviour and will be lost if",
         "//     the code is regenerated.",
         "// </auto-generated>",
-        "//------------------------------------------------------------------------------"
+        "//------------------------------------------------------------------------------",
+        ""
     };
 }

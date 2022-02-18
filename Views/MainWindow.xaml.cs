@@ -11,6 +11,8 @@
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Windows;
+using System.Windows.Controls;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -32,10 +34,10 @@ public partial class MainWindow {
         //TestOne();
 
         //Complex example of generating an executable assembly from a file and performing reflection on it.
-        TestTwo();
+        //TestTwo();
 
         //Close();
-        Environment.Exit(0);
+        //Environment.Exit(0);
     }
 
     static async void TestTwo() {
@@ -130,11 +132,18 @@ public partial class MainWindow {
             FileInfo KIFile = Path.Directory!.GetSubFile("KnownInput.cs");
             SyntaxTree KITree = await KIFile.GetSyntaxTreeAsync(Token);
             Debug.WriteLine("Got syntax tree.");
+            SyntaxNode TreeRoot = await KITree.GetRootAsync(Token);
+
             bool Ready = false;
-            (SyntaxToken IDToken, SyntaxToken? NameToken, SyntaxToken? TypeToken)? KIMatch = null;
-            foreach ( SyntaxNode KINode in (await KITree.GetRootAsync(Token)).IterateAllNodes() ) {
+            List<string> Usings = new List<string>();
+            List<(string Name, string AssetPath, string Type)> EnumMembers = new List<(string Name, string AssetPath, string Type)>();
+
+            (SyntaxToken NameToken, SyntaxToken? AssetPathToken, SyntaxToken? TypeToken)? KIMatch = null;
+            foreach ( SyntaxNode KINode in TreeRoot.IterateAllNodes() ) {
                 if ( !Ready ) {
-                    if ( KINode.TryGetToken(SyntaxKind.EnumKeyword, out _) ) {
+                    if ( KINode.IsKind(SyntaxKind.UsingDirective) ) {
+                        Usings.Add(KINode.ToString());
+                    } else if ( KINode.TryGetToken(SyntaxKind.EnumKeyword, out _) ) {
                         Ready = true;
                     }
                     continue;
@@ -143,42 +152,55 @@ public partial class MainWindow {
                 SyntaxToken[] Tks = KINode.ChildTokens().ToArray();
 
                 if ( KIMatch is null ) {
-                    //Debug.WriteLine("\tLooking for ID...");
-                    if ( Tks.TryGetFirst(STk => STk.IsKind(SyntaxKind.IdentifierToken), out SyntaxToken Tk)) {
-                        KIMatch = (Tk, null, null);
+                    if ( Tks.TryGetFirst(STk => STk.IsKind(SyntaxKind.IdentifierToken), out SyntaxToken NameToken)) {
+                        KIMatch = (NameToken, null, null);
                     }
                 } else {
-                    if ( KIMatch.Value.NameToken is null ) {
-                        //Debug.WriteLine("\tLooking for name...");
-                        if ( Tks.TryGetFirst(STk => STk.IsKind(SyntaxKind.StringLiteralToken), out SyntaxToken NameToken) ) {
-                            KIMatch = (KIMatch.Value.IDToken, NameToken, null);
+                    if ( KIMatch.Value.AssetPathToken is null ) {
+                        if ( Tks.TryGetFirst(STk => STk.IsKind(SyntaxKind.StringLiteralToken), out SyntaxToken AssetPathToken) ) {
+                            KIMatch = (KIMatch.Value.NameToken, AssetPathToken, null);
                         }
                     } else if (Tks.TryGetFirst(Stk => Stk.RawKind.Equals((int)SyntaxKind.BoolKeyword, (int)SyntaxKind.ByteKeyword, (int)SyntaxKind.DecimalKeyword, (int)SyntaxKind.DoubleKeyword, (int)SyntaxKind.FloatKeyword, (int)SyntaxKind.IntKeyword, (int)SyntaxKind.LongKeyword, (int)SyntaxKind.NullKeyword, (int)SyntaxKind.ObjectKeyword, (int)SyntaxKind.SByteKeyword, (int)SyntaxKind.StringKeyword, (int)SyntaxKind.UIntKeyword, (int)SyntaxKind.ULongKeyword, (int)SyntaxKind.UShortKeyword, (int)SyntaxKind.IdentifierToken), out SyntaxToken TypeToken)) {
-                        _EnumMembers.Add((KIMatch.Value.IDToken.Text, KIMatch.Value.NameToken.Value.Text, TypeToken.Text));
-                        Debug.WriteLine($"Found match: {_EnumMembers.Last().TupleToString()}");
+                        EnumMembers.Add((KIMatch.Value.NameToken.Text, KIMatch.Value.AssetPathToken.Value.Text, TypeToken.Text));
                         KIMatch = null;
-                        //continue;
                     }
                 }
             }
             
             Generators.Value = new IMatchGenerator[] {
-                new InputHelper_CtoInputs().Init(_EnumMembers),
-                new InputHelper_UpdInputs().Init(_EnumMembers),
-                new InputHelper_InputFlds().Init(_EnumMembers)
+                new InputHelper_OtherUsings().Init(Usings),
+                new InputHelper_CtoInputs().Init(EnumMembers),
+                new InputHelper_UpdInputs().Init(EnumMembers),
+                new InputHelper_InputFlds().Init(EnumMembers)
             };
         }
+    }
 
-        readonly List<(string Name, string Type, string AssetPath)> _EnumMembers = new List<(string Name, string Type, string AssetPath)>();
+    /// <summary />
+    internal class InputHelper_OtherUsings : IMatchGenerator {
+        /// <summary />
+        internal InputHelper_OtherUsings Init( IEnumerable<string> Usings ) {
+            _Content = Usings.Join("\r\n");
+            return this;
+        }
+
+        /// <inheritdoc />
+        public string Name => "OtherUsings";
+
+        /// <summary />
+        string _Content = string.Empty;
+
+        /// <inheritdoc />
+        public string Generate( Match Match, string Line ) => _Content;
     }
 
     /// <summary />
     internal class InputHelper_CtoInputs : IMatchGenerator {
         /// <summary />
-        internal InputHelper_CtoInputs Init( IEnumerable<(string Name, string Type, string AssetPath)> Members ) {
+        internal InputHelper_CtoInputs Init( IEnumerable<(string Name, string AssetPath, string Type)> Members ) {
             StringBuilder SB = new StringBuilder();
-            foreach ( (string Nm, string Tp, string AssPth) in Members ) {
-                _ = SB.Append("Input");
+            foreach ( (string Nm, string AssPth, string Tp) in Members ) {
+                _ = SB.Append("\r\n\t\tInput");
                 _ = SB.Append(Nm);
                 _ = SB.Append(" = new Input<");
                 _ = SB.Append(Tp);
@@ -188,6 +210,7 @@ public partial class MainWindow {
                 _ = SB.Append(AssPth);
                 _ = SB.Append(", default);");
             }
+            _ = SB.Remove(0, 4);
             _Content = SB.ToString();
             return this;
         }
@@ -205,13 +228,14 @@ public partial class MainWindow {
     internal class InputHelper_UpdInputs : IMatchGenerator {
 
         /// <summary />
-        internal InputHelper_UpdInputs Init( IEnumerable<(string Name, string Type, string AssetPath)> Members ) {
+        internal InputHelper_UpdInputs Init( IEnumerable<(string Name, string AssetPath, string Type)> Members ) {
             StringBuilder SB = new StringBuilder();
             foreach ( (string Nm, _, _) in Members ) {
-                _ = SB.Append("UpdateInput(Input");
+                _ = SB.Append("\r\n\t\tUpdateInput(Input");
                 _ = SB.Append(Nm);
                 _ = SB.Append(");");
             }
+            _ = SB.Remove(0, 4);
             _Content = SB.ToString();
             return this;
         }
@@ -229,16 +253,17 @@ public partial class MainWindow {
     internal class InputHelper_InputFlds : IMatchGenerator {
 
         /// <summary />
-        internal InputHelper_InputFlds Init( IEnumerable<(string Name, string Type, string AssetPath)> Members ) {
+        internal InputHelper_InputFlds Init( IEnumerable<(string Name, string AssetPath, string Type)> Members ) {
             StringBuilder SB = new StringBuilder();
-            foreach ( (string Nm, string Tp, _) in Members ) {
-                _ = SB.Append("public static Input<");
+            foreach ( (string Nm, _, string Tp) in Members ) {
+                _ = SB.Append("\r\n\tpublic static Input<");
                 _ = SB.Append(Tp);
                 _ = SB.Append("> Input");
                 _ = SB.Append(Nm);
-                _ = SB.Append(" { get; private set; } = null!;");
+                _ = SB.Append(" { get; private set; } = null!;\r\n");
             }
-            _Content = SB.ToString();
+            _ = SB.Remove(0, 3);
+            _Content = SB.ToString().TrimEnd(2);
             return this;
         }
 
@@ -253,4 +278,14 @@ public partial class MainWindow {
 
     #endregion
 
+    bool _Running = false;
+    async void Button_Click( object Sender, RoutedEventArgs E ) {
+        Button Btn = (Button)Sender;
+        if ( _Running ) { return; }
+        _Running = true;
+        Btn.IsEnabled = false;
+        await TestTwoAsync();
+        Btn.IsEnabled = true;
+        _Running = false;
+    }
 }
