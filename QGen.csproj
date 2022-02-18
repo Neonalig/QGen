@@ -11,9 +11,13 @@
 
   <ItemGroup>
     <Compile Remove="QGen.Lib\**" />
+    <Compile Remove="QGen.Sample\**" />
     <EmbeddedResource Remove="QGen.Lib\**" />
+    <EmbeddedResource Remove="QGen.Sample\**" />
     <None Remove="QGen.Lib\**" />
+    <None Remove="QGen.Sample\**" />
     <Page Remove="QGen.Lib\**" />
+    <Page Remove="QGen.Sample\**" />
   </ItemGroup>
 
   <ItemGroup>

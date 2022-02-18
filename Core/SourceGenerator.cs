@@ -17,12 +17,12 @@ namespace QGen.Core;
 /// <summary>
 /// The source generator class.
 /// </summary>
-internal class Generator {
+internal class SourceGenerator {
 
     /// <summary>
     /// The pre-compiled <see cref="Regex"/> instance used to find $(...) regions for automatic generation.
     /// </summary>
-    internal static readonly Regex MatchRegex = new Regex("\\$\\((?<Name>[a-zA-Z0-9]+)\\)", RegexOptions.Compiled);
+    internal static readonly Regex MatchRegex = new Regex("\\$\\((?<Name>[a-zA-Z0-9]+)\\)", RegexOptions.Compiled, TimeSpan.FromMilliseconds(250));
 
     /// <summary>
     /// Caches the names of the given match generators.
@@ -86,8 +86,6 @@ internal class Generator {
         }
     }
 
-    //TODO: Text Before, Text After (Match.index)
     //TODO: Partial reflection (Dynamic w/ .cs file (circa CSharpCodeProvider?); Unity compiled assemblies?)
-    //TODO: Either reflection, or reading from raw/non-compiled script file
 
 }

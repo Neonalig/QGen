@@ -9,6 +9,7 @@
 #region Using Directives
 
 using System.IO;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 using QGen.Core;
@@ -23,13 +24,62 @@ public partial class MainWindow {
         InitializeComponent();
         DataContext = this;
 
+        //Simple replacements for '%UserProfile%/Desktop/template.cs' to '%UserProfile%/Desktop/destfile.cs'
+        //TestOne();
+
+        //Complex example of generating an executable assembly from a file and performing reflection on it.
+        TestTwo();
+
+        //Close();
+        Environment.Exit(0);
+    }
+
+    #region TestOne
+
+    readonly struct ExMethods : IMatchGenerator {
+        /// <inheritdoc />
+        public string Name => @"exMethods";
+
+        /// <inheritdoc />
+        public string Generate( Match Match, string Line ) {
+            int Sp = 0;
+            foreach ( char C in Line ) {
+                switch ( C ) {
+                    case ' ':
+                        Sp++;
+                        break;
+                    case '\t':
+                        Sp += 4;
+                        break;
+                }
+            }
+
+            //return "";
+            return $"\n\n\tinternal int Spacing => {Sp};";
+        }
+    }
+
+
+    readonly struct ExCond : IMatchGenerator {
+        /// <inheritdoc />
+        public string Name => @"exCond";
+
+        /// <inheritdoc />
+        public string Generate( Match Match, string Line ) =>
+            //""
+            ", \"RELEASE\""
+        ;
+    }
+
+
+    static void TestOne() {
         FileInfo TestFile = new FileInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "template.cs"));
         FileInfo DestFile = new FileInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "destfile.cs"));
 
         IMatchGenerator[] Gens = { new ExCond(), new ExMethods() };
 
         string[] Lines = File.ReadAllLines(TestFile.FullName);
-        string[] NewLines = Generator.Generate(Lines, Gens).ToArray();
+        string[] NewLines = SourceGenerator.Generate(Lines, Gens).ToArray();
 
         if ( DestFile.Exists ) {
             DestFile.Delete();
@@ -39,42 +89,28 @@ public partial class MainWindow {
         _ = Process.Start(new ProcessStartInfo("subl", $"\"{DestFile.FullName}\"") {
             UseShellExecute = true
         });
-        //Close();
-        Environment.Exit(0);
     }
-}
 
-public readonly struct ExMethods : IMatchGenerator {
-    /// <inheritdoc />
-    public string Name => @"exMethods";
+    #endregion
 
-    /// <inheritdoc />
-    public string Generate( Match Match, string Line ) {
-        int Sp = 0;
-        foreach ( char C in Line ) {
-            switch ( C ) {
-                case ' ':
-                    Sp++;
-                    break;
-                case '\t':
-                    Sp += 4;
-                    break;
-            }
+    #region TestTwo
+
+    static void TestTwo() {
+        FileInfo ReadFile = new FileInfo("E:\\Projects\\Visual Studio\\QGen\\QGen.Sample\\KnownInput.cs");
+        if ( !AssemblyGenerator.GenerateAssembly(ReadFile, out string? Dest) ) {
+            Debug.WriteLine("Assembly generation failed.", "WARNING");
+            return;
         }
+        Debug.WriteLine($"Assembly generation was successful ({Dest}).");
 
-        //return "";
-        return $"\n\n\tinternal int Spacing => {Sp};";
+        Assembly Ass = Assembly.LoadFile(Dest);
+        Debug.WriteLine($"\tConstructed assembly '{Ass.FullName}'.");
+        foreach ( Type Tp in Ass.GetTypes() ) {
+            Debug.WriteLine($"\t\tFound type: {Tp.FullName}");
+        }
+        Debug.WriteLine($"Assembly read completed. Test Concluded.", "SUCCESS");
     }
-}
 
+    #endregion
 
-public readonly struct ExCond : IMatchGenerator {
-    /// <inheritdoc />
-    public string Name => @"exCond";
-
-    /// <inheritdoc />
-    public string Generate( Match Match, string Line ) =>
-        //""
-        ", \"RELEASE\""
-    ;
 }

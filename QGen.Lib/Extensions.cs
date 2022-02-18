@@ -346,4 +346,20 @@ public static class Extensions {
         if ( Index < 0 || Index >= Ln || Length == 0 || En > Ln ) { return null; }
         return Text[Index..En];
     }
+
+    /// <summary>
+    /// Constructs a new <see cref="FileInfo"/> instance pointing to a file with the given name relative to the supplied parent directory.
+    /// </summary>
+    /// <param name="Dir">The parent directory.</param>
+    /// <param name="Name">The child file name.</param>
+    /// <returns>A new <see cref="FileInfo"/> instance equivalent to "<paramref name="Dir"/>/<paramref name="Name"/>".</returns>
+    public static FileInfo GetSubFile( this DirectoryInfo Dir, string Name ) => new FileInfo(Path.Combine(Dir.FullName, Name));
+
+    /// <summary>
+    /// Constructs a new <see cref="FileInfo"/> instance pointing to the current path with a new extension.
+    /// </summary>
+    /// <param name="File">The current file path.</param>
+    /// <param name="NewExt">The new extension. (i.e. '.mp3')</param>
+    /// <returns>A new <see cref="FileInfo"/> instance.</returns>
+    public static FileInfo WithExtension( this FileInfo File, string NewExt ) => new FileInfo($"{File.DirectoryName}{Path.GetFileNameWithoutExtension(File.Name)}.{NewExt.TrimStart('.')}");
 }
