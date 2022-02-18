@@ -75,15 +75,23 @@ public class ScriptGenerator {
     /// <param name="Token">The cancellation token.</param>
     /// <returns>The modified lines of text.</returns>
     public static async IAsyncEnumerable<string> ModifyAsync( FileInfo TemplateFile, SyntaxTree Tree, CompilationUnitSyntax Root, IFileModifier Modifier, [EnumeratorCancellation] CancellationToken Token = default ) {
+        Debug.WriteLine("Retrieving file header...");
         foreach ( string Ln in Modifier.GetFileHeader() ) {
             yield return Ln;
         }
 
+        Debug.WriteLine($"Reading template ({TemplateFile.FullName})...");
+        string[] Lns = await File.ReadAllLinesAsync(TemplateFile.FullName, Token);
+
+        Debug.WriteLine("Reading modifier..");
         Out<IEnumerable<IMatchGenerator>> Generators = new Out<IEnumerable<IMatchGenerator>>(Array.Empty<IMatchGenerator>());
         await Modifier.ReadAsync(TemplateFile, Tree, Root, Generators, Token);
+        Debug.WriteLine($"Got generators '{Generators.Value.Join("', '")}'.");
 
-        foreach ( string ModLn in SourceGenerator.Generate(await File.ReadAllLinesAsync(TemplateFile.FullName, Token), Generators.Value) ) {
-            yield return ModLn;
+        Debug.WriteLine("Generating source...");
+        foreach ( string ModLn in SourceGenerator.Generate(Lns, Generators.Value) ) {
+            Debug.WriteLine($"\t[SC]: {ModLn}");
+            //yield return ModLn;
         }
     }
 

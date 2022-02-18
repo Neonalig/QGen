@@ -11,6 +11,8 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
+using JetBrains.Annotations;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
@@ -517,6 +519,63 @@ public static class Extensions {
 #pragma warning disable CS8762 // Parameter must have a non-null value when exiting in some condition.
     public static bool TryGet<TKey, TValue>( this IDictionary<TKey, TValue> Dict, TKey Key, [NotNullWhen(true)] out TValue? Value) where TKey : notnull => Dict.TryGetValue(Key, out Value);
 #pragma warning restore CS8762 // Parameter must have a non-null value when exiting in some condition.
+
+    /// <summary>
+    /// Attempts to get the first item in the collection that matches the given predicate.
+    /// </summary>
+    /// <typeparam name="TIn">The type of the input</typeparam>
+    /// <typeparam name="TOut">The type of the output.</typeparam>
+    /// <param name="Enum">The collection to iterate.</param>
+    /// <param name="Selector">The selector.</param>
+    /// <param name="Found">The found item, or <see langword="null"/> if <see langword="false"/>.</param>
+    /// <returns><see langword="true"/> if any of the items in the collection matched; otherwise <see langword="false"/>.</returns>
+    public static bool TryGetFirst<TIn, TOut>(this IEnumerable<TIn> Enum, Func<TIn, Out<TOut>, bool> Selector, [NotNullWhen(true)] out TOut? Found ){
+        Out<TOut?> Out = new Out<TOut?>(default);
+        foreach ( TIn Item in Enum ) {
+            if ( Selector(Item, Out!) ) {
+                Found = Out.Value!;
+                return true;
+            }
+            Out.Value = default;
+        }
+        Found = Out.Value;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to get the first item in the collection that matches the given predicate.
+    /// </summary>
+    /// <typeparam name="T">The collection containing type.</typeparam>
+    /// <param name="Enum">The collection to iterate.</param>
+    /// <param name="Selector">The selector.</param>
+    /// <param name="Found">The found item, or <see langword="null"/> if <see langword="false"/>.</param>
+    /// <returns><see langword="true"/> if any of the items in the collection matched; otherwise <see langword="false"/>.</returns>
+    public static bool TryGetFirst<T>( [ItemNotNull] this IEnumerable<T> Enum, Func<T, bool> Selector, [NotNullWhen(true)] out T? Found ) {
+        foreach ( T Item in Enum ) {
+            if ( Selector(Item) ) {
+                Found = Item!;
+                return true;
+            }
+        }
+        Found = default;
+        return false;
+    }
+
+    /// <summary>
+    /// Determines whether the left operand equals <b>any</b> of the specified <paramref name="Items"/>, returning <see langword="true"/> if so.
+    /// </summary>
+    /// <typeparam name="T">The type of item to check.</typeparam>
+    /// <param name="Base">The left operand.</param>
+    /// <param name="Items">The other items to check.</param>
+    /// <returns><see langword="true"/> if <paramref name="Base"/> equals any of the specified <paramref name="Items"/>; otherwise <see langword="false"/>.</returns>
+    public static bool Equals<T>(this T Base, params T[] Items) where T : IEquatable<T> {
+        foreach ( T Item in Items ) {
+            if ( Base.Equals(Item) ) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     /// <summary>
     /// Gets the file header.

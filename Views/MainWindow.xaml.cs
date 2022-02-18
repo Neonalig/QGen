@@ -38,6 +38,15 @@ public partial class MainWindow {
         Environment.Exit(0);
     }
 
+    static async void TestTwo() {
+        try {
+            await TestTwoAsync();
+        } catch ( Exception Ex ) {
+            Debug.WriteLine($"Caught: {Ex}", "EXCEPTION");
+            throw;
+        }
+    }
+
     #region TestOne
 
     readonly struct ExMethods : IMatchGenerator {
@@ -99,7 +108,7 @@ public partial class MainWindow {
 
     #region TestTwo
 
-    static async void TestTwo() {
+    static async Task TestTwoAsync() {
         DirectoryInfo ReadDir = new DirectoryInfo("E:\\Projects\\Visual Studio\\QGen\\QGen.Sample");
 
         await ScriptGenerator.GenerateAsync(ReadDir, SearchOption.TopDirectoryOnly, new [] { new InputHelper_AG() }, new CancellationToken());
@@ -117,24 +126,38 @@ public partial class MainWindow {
 
         /// <inheritdoc />
         public async Task ReadAsync( FileInfo Path, SyntaxTree Tree, CompilationUnitSyntax Root, Out<IEnumerable<IMatchGenerator>> Generators, CancellationToken Token = default ) {
+            Debug.WriteLine("Reading...");
             FileInfo KIFile = Path.Directory!.GetSubFile("KnownInput.cs");
             SyntaxTree KITree = await KIFile.GetSyntaxTreeAsync(Token);
+            Debug.WriteLine("Got syntax tree.");
+            bool Ready = false;
             (SyntaxToken IDToken, SyntaxToken? NameToken, SyntaxToken? TypeToken)? KIMatch = null;
             foreach ( SyntaxNode KINode in (await KITree.GetRootAsync(Token)).IterateAllNodes() ) {
+                if ( !Ready ) {
+                    if ( KINode.TryGetToken(SyntaxKind.EnumKeyword, out _) ) {
+                        Ready = true;
+                    }
+                    continue;
+                }
+
+                SyntaxToken[] Tks = KINode.ChildTokens().ToArray();
+
                 if ( KIMatch is null ) {
-                    if ( KINode.TryGetToken(SyntaxKind.IdentifierToken, out SyntaxToken? IDToken) ) {
-                        KIMatch = (IDToken.Value, null, null);
+                    //Debug.WriteLine("\tLooking for ID...");
+                    if ( Tks.TryGetFirst(STk => STk.IsKind(SyntaxKind.IdentifierToken), out SyntaxToken Tk)) {
+                        KIMatch = (Tk, null, null);
                     }
                 } else {
                     if ( KIMatch.Value.NameToken is null ) {
-                        if ( KINode.TryGetToken(SyntaxKind.StringLiteralToken, out SyntaxToken? NameToken) ) {
+                        //Debug.WriteLine("\tLooking for name...");
+                        if ( Tks.TryGetFirst(STk => STk.IsKind(SyntaxKind.StringLiteralToken), out SyntaxToken NameToken) ) {
                             KIMatch = (KIMatch.Value.IDToken, NameToken, null);
                         }
-                    } else if (KINode.TryGetAnyToken(out SyntaxToken? TypeToken) ) {
-                        _EnumMembers.Add((KIMatch.Value.IDToken.Text, KIMatch.Value.NameToken.Value.Text, TypeToken.Value.Text));
+                    } else if (Tks.TryGetFirst(Stk => Stk.RawKind.Equals((int)SyntaxKind.BoolKeyword, (int)SyntaxKind.ByteKeyword, (int)SyntaxKind.DecimalKeyword, (int)SyntaxKind.DoubleKeyword, (int)SyntaxKind.FloatKeyword, (int)SyntaxKind.IntKeyword, (int)SyntaxKind.LongKeyword, (int)SyntaxKind.NullKeyword, (int)SyntaxKind.ObjectKeyword, (int)SyntaxKind.SByteKeyword, (int)SyntaxKind.StringKeyword, (int)SyntaxKind.UIntKeyword, (int)SyntaxKind.ULongKeyword, (int)SyntaxKind.UShortKeyword, (int)SyntaxKind.IdentifierToken), out SyntaxToken TypeToken)) {
+                        _EnumMembers.Add((KIMatch.Value.IDToken.Text, KIMatch.Value.NameToken.Value.Text, TypeToken.Text));
                         Debug.WriteLine($"Found match: {_EnumMembers.Last().TupleToString()}");
                         KIMatch = null;
-                        break;
+                        //continue;
                     }
                 }
             }
