@@ -12,12 +12,12 @@ using System.Text.RegularExpressions;
 
 #endregion
 
-namespace QGen.Core;
+namespace QGen.Lib;
 
 /// <summary>
 /// Represents a portion of a source generator for a specific match name.
 /// </summary>
-internal interface IMatchGenerator {
+public interface IMatchGenerator {
 
     /// <summary>
     /// Gets the name.

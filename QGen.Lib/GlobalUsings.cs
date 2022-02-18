@@ -9,6 +9,5 @@
 #region Using Directives
 
 global using System.Diagnostics;
-global using QGen.Lib;
 
 #endregion

@@ -13,7 +13,7 @@ using System.Text.RegularExpressions;
 
 #endregion
 
-namespace QGen.Core;
+namespace QGen.Lib;
 
 /// <summary>
 /// General extension methods and shorthand.

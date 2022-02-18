@@ -10,6 +10,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="QGen.Lib\**" />
+    <EmbeddedResource Remove="QGen.Lib\**" />
+    <None Remove="QGen.Lib\**" />
+    <Page Remove="QGen.Lib\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="Resources\Fonts\Atkinson-Hyperlegible-Bold-102.otf" />
     <None Remove="Resources\Fonts\Atkinson-Hyperlegible-BoldItalic-102.otf" />
     <None Remove="Resources\Fonts\Atkinson-Hyperlegible-Italic-102.otf" />
@@ -38,6 +45,10 @@
   <ItemGroup>
     <Folder Include="Models\" />
     <Folder Include="ViewModels\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="QGen.Lib\QGen.Lib.csproj" />
   </ItemGroup>
 
 </Project>
