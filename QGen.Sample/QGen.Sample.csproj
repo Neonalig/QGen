@@ -7,6 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="InputHelperAG.auto.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="InputHelperAG.auto.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\QGen.Lib\QGen.Lib.csproj" />
   </ItemGroup>
 

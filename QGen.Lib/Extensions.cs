@@ -11,6 +11,10 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Text;
+
 #endregion
 
 namespace QGen.Lib;
@@ -19,6 +23,19 @@ namespace QGen.Lib;
 /// General extension methods and shorthand.
 /// </summary>
 public static class Extensions {
+
+    /// <inheritdoc cref="TupleToString{T1,T2,T3}"/>
+    public static string TupleToString<T1, T2>( this (T1, T2) Tuple ) => $"({Tuple.Item1}, {Tuple.Item2})";
+
+    /// <summary>
+    /// Converts the tuple to a <see cref="string"/> representation.
+    /// </summary>
+    /// <typeparam name="T1">The first element type.</typeparam>
+    /// <typeparam name="T2">The second element type.</typeparam>
+    /// <typeparam name="T3">The third element type.</typeparam>
+    /// <param name="Tuple">The tuple.</param>
+    /// <returns> A <see cref="string" /> that represents this tuple. </returns>
+    public static string TupleToString<T1, T2, T3>( this (T1, T2, T3) Tuple ) => $"({Tuple.Item1}, {Tuple.Item2}, {Tuple.Item3})";
 
     /// <summary>
     /// Clamps the specified value within the given range.
@@ -85,8 +102,12 @@ public static class Extensions {
             St = Rn.ResolveStart(C),
             En = Rn.ResolveEnd(C);
         foreach ( T Item in Enum ) {
-            if ( I > En ) { yield break; }
-            if ( I < St ) { continue; }
+            if ( I > En ) {
+                yield break;
+            }
+            if ( I < St ) {
+                continue;
+            }
             yield return Item;
             I++;
         }
@@ -238,7 +259,7 @@ public static class Extensions {
     /// <typeparam name="T">The collection containing type.</typeparam>
     /// <param name="Enum">The collection to iterate.</param>
     /// <returns>The elements in the collection.</returns>
-    public static IEnumerable<T> Iterate<T>(this IEnumerator<T> Enum ) {
+    public static IEnumerable<T> Iterate<T>( this IEnumerator<T> Enum ) {
         Enum.Reset();
         while ( Enum.MoveNext() ) {
             yield return Enum.Current;
@@ -254,6 +275,7 @@ public static class Extensions {
     /// <returns>The values in the collection.</returns>
     public static IEnumerable<T> TryIterate<T>( this IEnumerator<T> Enum, out bool Any ) {
         bool HadAny = false;
+
         IEnumerable<T> Gen() {
             foreach ( T Item in Enum.Iterate() ) {
                 HadAny = true;
@@ -328,7 +350,7 @@ public static class Extensions {
         int End = Rn.ResolveEnd(L);
         Left = Start == 0 ? null : Text[..Start];
         Mid = Text[Start..End];
-        Right = End >= L ? null : Text[(End+1)..];
+        Right = End >= L ? null : Text[(End + 1)..];
     }
 
     /// <summary>
@@ -355,7 +377,9 @@ public static class Extensions {
     /// <returns>The text within the specified range, or <see langword="null"/> if the range is invalid.</returns>
     public static string? WithinRange( this string Text, int Index, int Length ) {
         int Ln = Text.Length, En = Index + Length;
-        if ( Index < 0 || Index >= Ln || Length == 0 || En > Ln ) { return null; }
+        if ( Index < 0 || Index >= Ln || Length == 0 || En > Ln ) {
+            return null;
+        }
         return Text[Index..En];
     }
 
@@ -398,4 +422,116 @@ public static class Extensions {
         }
         return Out;
     }
+
+    /// <summary>
+    /// Trims the string to the desired length.
+    /// </summary>
+    /// <param name="String">The string to trim.</param>
+    /// <param name="Length">The desired string length. If the current string is already shorter, then no truncation is made.</param>
+    /// <returns>The truncated string.</returns>
+    public static string TrimToLength( this string String, int Length ) {
+        int Ln = String.Length;
+        return Length >= Ln ? String : String[..Length];
+    }
+
+    /// <summary>
+    /// Trims the specified characters from the end of the string.
+    /// </summary>
+    /// <param name="String">The string to trim.</param>
+    /// <param name="Chars">The amount of characters to remove. If greater than the length of the string, <see cref="string.Empty"/> is returned instead.</param>
+    /// <returns>The truncated string.</returns>
+    public static string TrimEnd( this string String, int Chars ) {
+        int Ln = String.Length;
+        return Chars >= Ln ? string.Empty : String[..(Ln - Chars)];
+    }
+
+    /// <summary>
+    /// Iterates all children nodes from the given point in the tree.
+    /// </summary>
+    /// <param name="Node">The current root node.</param>
+    /// <param name="Recurse">If <see langword="true"/> children of children (etc.) are also returned; otherwise only the top level of children are returned.</param>
+    /// <returns>All children nodes from the given point in the tree.</returns>
+    public static IEnumerable<SyntaxNode> IterateAllNodes( this SyntaxNode Node, bool Recurse = true ) {
+        foreach ( SyntaxNode Nd in Node.ChildNodes() ) {
+            yield return Nd;
+            if ( Recurse ) {
+                foreach ( SyntaxNode N in IterateAllNodes(Nd, true) ) {
+                    yield return N;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Attempts to get the first token with the specified kind.
+    /// </summary>
+    /// <param name="Node">The node to search for tokens within.</param>
+    /// <param name="Kind">The kind of token to search for.</param>
+    /// <param name="Token">The found token, or <see langword="null"/> if <see langword="false"/>.</param>
+    /// <returns><see langword="true"/> if the token was found; otherwise <see langword="false"/>.</returns>
+    public static bool TryGetToken(this SyntaxNode Node, SyntaxKind Kind, [NotNullWhen(true)] out SyntaxToken? Token ) {
+        foreach (SyntaxToken Tk in Node.ChildTokens() ) {
+            if ( Tk.IsKind(Kind) ) {
+                Token = Tk;
+                return true;
+            }
+        }
+        Token = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to get the first token.
+    /// </summary>
+    /// <param name="Node">The node to search for tokens within.</param>
+    /// <param name="Token">The found token, or <see langword="null"/> if <see langword="false"/>.</param>
+    /// <returns><see langword="true"/> if any token was found; otherwise <see langword="false"/>.</returns>
+    public static bool TryGetAnyToken( this SyntaxNode Node, [NotNullWhen(true)] out SyntaxToken? Token ) {
+        foreach ( SyntaxToken Tk in Node.ChildTokens() ) {
+            Token = Tk;
+            return true;
+        }
+        Token = null;
+        return false;
+    }
+
+
+    /// <summary>
+    /// Asynchronously gets the <see cref="SyntaxTree"/> generated from the given C# file.
+    /// </summary>
+    /// <param name="ReadFile">The file to read.</param>
+    /// <param name="Token">The cancellation token.</param>
+    /// <returns>An asynchronous task.</returns>
+    public static async Task<SyntaxTree> GetSyntaxTreeAsync( this FileInfo ReadFile, CancellationToken Token = default ) {
+        await using ( FileStream FS = ReadFile.Open(FileMode.Open, FileAccess.Read) ) {
+            SourceText ST = SourceText.From(FS);
+            SyntaxTree Tree = CSharpSyntaxTree.ParseText(ST, path: ReadFile.FullName, cancellationToken: Token);
+            return Tree;
+        }
+    }
+
+    /// <inheritdoc cref="IDictionary{TKey, TValue}.TryGetValue(TKey, out TValue)"/>
+    /// <param name="Dict">The dictionary to search through.</param>
+    /// <param name="Key">The key to search for.</param>
+    /// <param name="Value">The found value, or <see langword="null"/>.</param>
+#pragma warning disable CS8762 // Parameter must have a non-null value when exiting in some condition.
+    public static bool TryGet<TKey, TValue>( this IDictionary<TKey, TValue> Dict, TKey Key, [NotNullWhen(true)] out TValue? Value) where TKey : notnull => Dict.TryGetValue(Key, out Value);
+#pragma warning restore CS8762 // Parameter must have a non-null value when exiting in some condition.
+
+    /// <summary>
+    /// Gets the file header.
+    /// </summary>
+    /// <param name="Modifier">The modifier.</param>
+    /// <returns>The collection of strings representing the file header.</returns>
+    public static string[] GetFileHeader( this IFileModifier Modifier ) => new [] {
+        "//------------------------------------------------------------------------------",
+        "// <auto-generated>",
+        $"//     This code was generated by {Modifier.Name}.",
+        $"//     Runtime Version:{Modifier.Version}",
+        "//",
+        "//     Changes to this file may cause incorrect behaviour and will be lost if",
+        "//     the code is regenerated.",
+        "// </auto-generated>",
+        "//------------------------------------------------------------------------------"
+    };
 }
