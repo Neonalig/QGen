@@ -295,6 +295,18 @@ public static class Extensions {
     /// <param name="Separator">The text to place inbetween subsequent strings in the collection.</param>
     public static string Join( this IEnumerable<string> Text, string Separator ) => string.Join(Separator, Text);
 
+    /// <inheritdoc cref="string.Join(string, string?[])"/>
+    /// <param name="Text">The collection of objects to join. (<see cref="object.ToString()"/> will be invoked on each)</param>
+    /// <param name="Separator">The text to place inbetween subsequent strings in the collection.</param>
+    public static string Join( this IEnumerable<object> Text, string Separator ) => string.Join(Separator, Text);
+
+    /// <inheritdoc cref="string.Join(string, string?[])"/>
+    /// <typeparam name="T">The type of the objects.</typeparam>
+    /// <param name="Text">The collection of objects to join. (the <paramref name="ToString"/> function will be invoked on each)</param>
+    /// <param name="Separator">The text to place inbetween subsequent strings in the collection.</param>
+    /// <param name="ToString">The function used to convert the object into a relevant <see cref="string"/> representation.</param>
+    public static string Join<T>( this IEnumerable<T> Text, string Separator, Func<T, string> ToString ) => string.Join(Separator, Text.Select(ToString));
+
     /// <summary>
     /// Joins the strings into a single whole string.
     /// </summary>
@@ -362,4 +374,28 @@ public static class Extensions {
     /// <param name="NewExt">The new extension. (i.e. '.mp3')</param>
     /// <returns>A new <see cref="FileInfo"/> instance.</returns>
     public static FileInfo WithExtension( this FileInfo File, string NewExt ) => new FileInfo($"{File.DirectoryName}{Path.GetFileNameWithoutExtension(File.Name)}.{NewExt.TrimStart('.')}");
+
+    /// <inheritdoc cref="Enumerable.Select{TSource, TResult}(IEnumerable{TSource}, Func{TSource, TResult})"/>
+    /// <param name="Source">The collection of items to iterate.</param>
+    /// <param name="Selector">The transformation function.</param>
+    public static TOut[] Select<TIn, TOut>( this TIn[] Source, Func<TIn, TOut> Selector ) {
+        int L = Source.Length;
+        TOut[] Out = new TOut[L];
+        for ( int I = 0; I < L; I++ ) {
+            Out[I] = Selector(Source[I]);
+        }
+        return Out;
+    }
+
+    /// <inheritdoc cref="Enumerable.Select{TSource, TResult}(IEnumerable{TSource}, Func{TSource, TResult})"/>
+    /// <param name="Source">The collection of items to iterate.</param>
+    /// <param name="Selector">The transformation function.</param>
+    public static List<TOut> Select<TIn, TOut>( this IList<TIn> Source, Func<TIn, TOut> Selector ) {
+        int L = Source.Count;
+        List<TOut> Out = new List<TOut>(L);
+        for ( int I = 0; I < L; I++ ) {
+            Out[I] = Selector(Source[I]);
+        }
+        return Out;
+    }
 }

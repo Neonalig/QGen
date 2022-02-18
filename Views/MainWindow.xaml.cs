@@ -96,19 +96,18 @@ public partial class MainWindow {
     #region TestTwo
 
     static void TestTwo() {
-        FileInfo ReadFile = new FileInfo("E:\\Projects\\Visual Studio\\QGen\\QGen.Sample\\KnownInput.cs");
-        if ( !AssemblyGenerator.GenerateAssembly(ReadFile, out string? Dest) ) {
+        DirectoryInfo ReadDir = new DirectoryInfo("E:\\Projects\\Visual Studio\\QGen\\QGen.Sample");
+        if ( !AssemblyGenerator.GenerateAssembly(ReadDir, out Assembly? Ass) ) {
             Debug.WriteLine("Assembly generation failed.", "WARNING");
             return;
         }
-        Debug.WriteLine($"Assembly generation was successful ({Dest}).");
+        Debug.WriteLine($"Assembly generation was successful ({Ass}).");
 
-        Assembly Ass = Assembly.LoadFile(Dest);
-        Debug.WriteLine($"\tConstructed assembly '{Ass.FullName}'.");
-        foreach ( Type Tp in Ass.GetTypes() ) {
-            Debug.WriteLine($"\t\tFound type: {Tp.FullName}");
-        }
-        Debug.WriteLine($"Assembly read completed. Test Concluded.", "SUCCESS");
+        //Debug.WriteLine($"\tConstructed assembly '{Ass.FullName}'.");
+        //foreach ( Type Tp in Ass.GetTypes() ) {
+        //    Debug.WriteLine($"\t\tFound type: {Tp.FullName}");
+        //}
+        //Debug.WriteLine("Assembly read completed. Test Concluded.", "SUCCESS");
     }
 
     #endregion
