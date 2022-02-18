@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32210.238
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QGen", "QGen.csproj", "{C021D179-4605-4C10-9201-B8A504EFC0BD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C021D179-4605-4C10-9201-B8A504EFC0BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C021D179-4605-4C10-9201-B8A504EFC0BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C021D179-4605-4C10-9201-B8A504EFC0BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C021D179-4605-4C10-9201-B8A504EFC0BD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D99B3014-07B1-4B22-80B7-C266E939011B}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,44 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>Resources\Icon.ico</ApplicationIcon>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\Fonts\Atkinson-Hyperlegible-Bold-102.otf" />
+    <None Remove="Resources\Fonts\Atkinson-Hyperlegible-BoldItalic-102.otf" />
+    <None Remove="Resources\Fonts\Atkinson-Hyperlegible-Italic-102.otf" />
+    <None Remove="Resources\Fonts\Atkinson-Hyperlegible-Regular-102.otf" />
+    <None Remove="Resources\Icon-CREDIT.md" />
+    <None Remove="Resources\Icon.ico" />
+    <None Remove="Resources\Icon.pdn" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Resources\Icon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ModernWpfUis" Version="1.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\Fonts\Atkinson-Hyperlegible-Bold-102.otf" />
+    <Resource Include="Resources\Fonts\Atkinson-Hyperlegible-BoldItalic-102.otf" />
+    <Resource Include="Resources\Fonts\Atkinson-Hyperlegible-Italic-102.otf" />
+    <Resource Include="Resources\Fonts\Atkinson-Hyperlegible-Regular-102.otf" />
+    <Resource Include="Resources\Icon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Models\" />
+    <Folder Include="ViewModels\" />
+    <Folder Include="Views\" />
+  </ItemGroup>
+
+</Project>

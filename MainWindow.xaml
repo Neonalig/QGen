@@ -1,0 +1,38 @@
+﻿<Window
+    x:Class="QGen.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:qGen="clr-namespace:QGen"
+    xmlns:ui="http://schemas.modernwpf.com/2019"
+    Title="QGen"
+    Width="800"
+    Height="450"
+    d:DataContext="{d:DesignInstance qGen:MainWindow}"
+    ui:ThemeManager.IsThemeAware="True"
+    ui:ThemeManager.RequestedTheme="Dark"
+    ui:WindowHelper.UseModernWindowStyle="True"
+    Background="{DynamicResource SystemControlPageBackgroundAltHighBrush}"
+    FontFamily="{StaticResource AtkinsonHyperlegible}"
+    Foreground="{DynamicResource SystemControlPageTextBaseHighBrush}"
+    WindowStartupLocation="CenterScreen"
+    mc:Ignorable="d">
+    <SelectiveScrollingGrid>
+        <SelectiveScrollingGrid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </SelectiveScrollingGrid.RowDefinitions>
+        <StackPanel Grid.Row="0" Orientation="Vertical">
+            <TextBlock
+                HorizontalAlignment="Center"
+                FontSize="30"
+                Text="QGen" />
+            <TextBlock
+                HorizontalAlignment="Center"
+                Opacity="0.5"
+                Text="Automated source generation for the layman." />
+        </StackPanel>
+    </SelectiveScrollingGrid>
+</Window>
