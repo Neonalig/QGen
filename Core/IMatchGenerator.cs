@@ -30,7 +30,8 @@ internal interface IMatchGenerator {
     /// <summary>
     /// Generates the code given the specified match.
     /// </summary>
-    /// <param name="Match">The match.</param>
-    void Generate( Match Match );
+    /// <param name="Match">The matched text.</param>
+    /// <param name="Line">The line of text that was matched.</param>
+    void Generate( Match Match, string Line );
 
 }

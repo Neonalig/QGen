@@ -24,6 +24,8 @@ internal class Generator {
     /// </summary>
     internal static readonly Regex MatchRegex = new Regex("\\$\\((?<Name>[a-zA-Z0-9]+)\\)", RegexOptions.Compiled);
 
-
+    //TODO: Text Before, Text After (Match.index)
+    //TODO: Partial reflection (Dynamic w/ .cs file (circa CSharpCodeProvider?); Unity compiled assemblies?)
+    //TODO: Either reflection, or reading from raw/non-compiled script file
 
 }

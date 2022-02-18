@@ -6,7 +6,7 @@
 // More information can be found here: https://www.gnu.org/licenses/gpl-3.0.en.html
 #endregion
 
-namespace QGen;
+namespace QGen.Views;
 
 /// <summary> Interaction logic for MainWindow.xaml </summary>
 public partial class MainWindow {
