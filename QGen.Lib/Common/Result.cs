@@ -1,4 +1,16 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿#region Copyright (C) 2017-2022  Cody Bock
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License (Version 3.0)
+// as published by the Free Software Foundation.
+// 
+// More information can be found here: https://www.gnu.org/licenses/gpl-3.0.en.html
+#endregion
+
+#region Using Directives
+
+using System.Diagnostics.CodeAnalysis;
+
+#endregion
 
 namespace QGen.Lib.Common;
 
@@ -73,6 +85,27 @@ public sealed class Result : IResult {
     /// A new <see cref="Result"/> instance utilising the '<see langword="new"/> <see cref="Result(bool)"/>' constructor.
     /// </returns>
     public static explicit operator Result( bool Success ) => new Result(Success);
+
+    /// <summary>
+    /// An unsuccessful result related to a file path being invalid.
+    /// </summary>
+    /// <param name="Path">The requested path to the file.</param>
+    /// <returns>A new <see cref="Result"/> instance.</returns>
+    public static Result FilePathInvalid( string Path ) => new Result(false, $"The file path '{Path}' was invalid and could not be resolved.");
+
+    /// <summary>
+    /// An unsuccessful result related to a file path not being found.
+    /// </summary>
+    /// <param name="Path">The requested path to the file.</param>
+    /// <returns>A new <see cref="Result"/> instance.</returns>
+    public static Result FileNotFound( string Path ) => new Result(false, $"The file with the path '{Path}' could not be found.");
+
+    /// <summary>
+    /// An unsuccessful result related to a <see cref="IFileGenerator"/> lookup failing.
+    /// </summary>
+    /// <param name="Generator">The source generator that failed.</param>
+    /// <returns>A new <see cref="Result"/> instance.</returns>
+    public static Result LookupFailed( IFileGenerator Generator ) => new Result(false, $"Attempted file lookup on the source generator '{Generator.Name}' (v{Generator.Version}) failed.");
 
 }
 
@@ -225,21 +258,5 @@ public interface IResult<T> : IResult {
     public new static readonly Result<T> UnexpectedError = new Result<T>(false, Result.MsgError, default!);
 #pragma warning restore CS0109 // Member does not hide an inherited member; new keyword is not required.
 #pragma warning restore IDE0079 // Remove unnecessary suppression
-
-    /// <summary>
-    /// Attempts to get the resultant value of the method, returning <see langword="true"/> if the result was a success.
-    /// </summary>
-    /// <param name="Value">The resultant value.</param>
-    /// <returns><see langword="true"/> if the result was a success; otherwise <see langword="false"/>.</returns>
-    public bool TryGetResult( [NotNullWhen(true)] out T? Value ) {
-        if ( Success ) {
-            Value = this.Value;
-#pragma warning disable CS8762
-            return true;
-#pragma warning restore CS8762
-        }
-        Value = default;
-        return false;
-    }
 
 }

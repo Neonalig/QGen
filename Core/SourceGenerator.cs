@@ -86,6 +86,4 @@ internal class SourceGenerator {
         }
     }
 
-    //TODO: Partial reflection (Dynamic w/ .cs file (circa CSharpCodeProvider?); Unity compiled assemblies?)
-
 }

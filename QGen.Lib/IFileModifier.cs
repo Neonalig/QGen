@@ -8,10 +8,8 @@
 
 #region Using Directives
 
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-
 using QGen.Lib.Common;
+using QGen.Lib.FileSystem;
 
 #endregion
 
@@ -20,41 +18,32 @@ namespace QGen.Lib;
 /// <summary>
 /// Represents a source generator which modifies an existing template, creating a new file.
 /// </summary>
-public interface IFileModifier {
+public interface IFileModifier : IFileGenerator {
 
     /// <summary>
-    /// Gets the name of this modifier utility.
+    /// Gets the relative path to the desired template file.
     /// </summary>
     /// <value>
-    /// The name.
+    /// The relative path to the template file.
     /// </value>
-    string Name { get; }
+    string TemplatePath { get; }
+    //Value will be used in ParsedDirectory.TryGetFile(string, out FileSystem.ParsedFile?)
 
     /// <summary>
-    /// Gets the version of this modifier utility.
+    /// Gets the relative path to the desired destination file.
     /// </summary>
     /// <value>
-    /// The version.
+    /// The relative path to the destination file.
     /// </value>
-    Version Version { get; }
+    string DestinationPath { get; }
 
     /// <summary>
-    /// Gets the requested path.
+    /// Asynchronously runs the source generator inside of the specified root directory, looking for any desired files and returning the relevant <see cref="IMatchGenerator"/>s to execute.
     /// </summary>
-    /// <remarks>Extensions (such as .cs and .auto.cs) should not be specified.</remarks>
-    /// <value>
-    /// The requested path.
-    /// </value>
-    string RequestedPath { get; }
-
-    /// <summary>
-    /// Reads the specified path, caching any relevant info.
-    /// </summary>
-    /// <param name="Path">The path.</param>
-    /// <param name="Tree">The tree.</param>
-    /// <param name="Root">The compilation root.</param>
-    /// <param name="Generators">The collection of relevant generators.</param>
-    /// <param name="Token">The cancellation token.</param>
-    Task ReadAsync( FileInfo Path, SyntaxTree Tree, CompilationUnitSyntax Root, Out<IEnumerable<IMatchGenerator>> Generators, CancellationToken Token );
+    /// <param name="RootDirectory">The root directory.</param>
+    /// <param name="TemplateFile">The template file to read data from.</param>
+    /// <param name="DestinationFile">The path to the desired destination file.</param>
+    /// <returns>The collection of match generators to use on the destination file based upon the contents of the template file.</returns>
+    Task<Result<IEnumerable<IMatchGenerator>>> LookupAsync( ParsedDirectory RootDirectory, ParsedFile TemplateFile, ParsedFile DestinationFile );
 
 }

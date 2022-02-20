@@ -17,6 +17,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
 using QGen.Lib.Common;
+using QGen.Lib.FileSystem;
 
 #endregion
 
@@ -26,6 +27,44 @@ namespace QGen.Core;
 /// Provides methods to generate assemblies from raw script files.
 /// </summary>
 public class ScriptGenerator {
+
+    public static async Task<Result> GenerateAsync( DirectoryInfo RootDirectory, IEnumerable<IFileGenerator> Generators ) {
+        //TODO: Below
+        //  IFileModifier clones a template file, then modifies the template data stored within.
+        //  IFileCreator reads multiple files in the root directory, then can create numerous new files with that information.
+        ParsedDirectory Dir = new ParsedDirectory(RootDirectory);
+        foreach ( IFileGenerator Generator in Generators ) {
+            switch ( Generator ) {
+                case IFileModifier Mod:
+                    if ( !Dir.TryGetFile(Mod.TemplatePath, out ParsedFile? TemplateFile) ) {
+                        return Result.FilePathInvalid(Mod.TemplatePath);
+                    }
+                    if ( !TemplateFile.Exists ) {
+                        return Result.FileNotFound(Mod.TemplatePath);
+                    }
+                    if ( !Dir.TryGetFile(Mod.DestinationPath, out ParsedFile? DestinationFile) ) {
+                        return Result.FilePathInvalid(Mod.TemplatePath);
+                    }
+
+                    if ( !(await Mod.LookupAsync(Dir, TemplateFile, DestinationFile)).TryGetValue(out IEnumerable<IMatchGenerator>? MatchGens ) ) {
+                        return Result.LookupFailed(Mod);
+                    }
+
+                    if ( DestinationFile.Exists ) { DestinationFile.Delete(); }
+                    await using ( StreamWriter SW = File.CreateText(DestinationFile.FullName) ) {
+                        foreach ( string Line in SourceGenerator.Generate(await TemplateFile.Lines.GetValueAsync(), MatchGens) ) {
+                            await SW.WriteLineAsync(Line);
+                        }
+                        await SW.FlushAsync();
+                    }
+                    break;
+                case IFileCreator Crt:
+                    break;
+                default:
+                    throw new IndexOutOfRangeException();
+            }
+        }
+    }
 
     /// <summary>
     /// Caches the names of the given file modifiers.

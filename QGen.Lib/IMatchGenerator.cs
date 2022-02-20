@@ -22,7 +22,7 @@ namespace QGen.Lib;
 public interface IMatchGenerator {
 
     /// <summary>
-    /// Gets the name.
+    /// Gets the name of the match generator.
     /// </summary>
     /// <value>
     /// The name.

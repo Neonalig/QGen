@@ -24,11 +24,27 @@ namespace QGen.Lib.FileSystem;
 /// <summary>
 /// Represents a C# source file which gets dynamically parsed in portions upon request.
 /// </summary>
-public class ParsedFile {
+public class ParsedFile : FileSystemInfo {
 
     /// <inheritdoc cref="ParsedFile(FileInfo, ParsedDirectory)"/>
     /// <remarks>If this <see cref="ParsedFile"/> is constructed relative to a <see cref="ParsedDirectory"/>, use the other constructor (<see langword="new"/> <see cref="ParsedFile(FileInfo, ParsedDirectory)"/>) to avoid excessive, unnecessary memory allocations.</remarks>
     public ParsedFile( FileInfo Path ) : this (Path, new ParsedDirectory(Path.Directory!)) { }
+
+    #region FileSystemInfo Implementation
+
+    /// <inheritdoc />
+    public override bool Exists => Path.Exists;
+
+    /// <inheritdoc />
+    public override void Delete() => Path.Delete();
+
+    /// <inheritdoc />
+    public override string Name => Path.Name;
+
+    /// <inheritdoc />
+    public override string FullName => Path.FullName;
+
+    #endregion
 
     /// <summary>
     /// Initialises a new instance of the <see cref="ParsedFile"/> class.

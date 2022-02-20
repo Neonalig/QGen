@@ -778,4 +778,21 @@ public static class Extensions {
             throw new InvalidOperationException($"Attempted to grab {L} items from a collection with only {I} items.");
         }
     }
+
+    /// <summary>
+    /// Attempts to get the resultant value of the method, returning <see langword="true"/> if the result was a success.
+    /// </summary>
+    /// <param name="Result">The result.</param>
+    /// <param name="Value">The resultant value.</param>
+    /// <returns><see langword="true"/> if the result was a success; otherwise <see langword="false"/>.</returns>
+    public static bool TryGetValue<T>( this Result<T> Result, [NotNullWhen(true)] out T? Value ) {
+        if ( Result.Success ) {
+            Value = Result.Value;
+#pragma warning disable CS8762
+            return true;
+#pragma warning restore CS8762
+        }
+        Value = default;
+        return false;
+    }
 }
