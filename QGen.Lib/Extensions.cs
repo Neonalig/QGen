@@ -8,6 +8,7 @@
 
 #region Using Directives
 
+using System.Collections;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
@@ -644,59 +645,137 @@ public static class Extensions {
     };
 
     /// <summary>
-    /// Constructs a new array with the items in the original array being cast to the desired type.
+    /// Applies the given cast to each item in the collection.
     /// </summary>
-    /// <typeparam name="TIn">The original type of the input.</typeparam>
-    /// <typeparam name="TOut">The type to cast into.</typeparam>
-    /// <param name="Array">The array to cast.</param>
-    /// <returns>A new array of equal length.</returns>
-    [ItemNotNull]
-    public static TOut[] SafeCastArray<TIn, TOut>( [ItemNotNull] this TIn[] Array ) where TOut : TIn {
-        int L = Array.Length;
-        TOut[] Res = new TOut[L];
-        for ( int I = 0; I < L; I++ ) {
-            Res[I] = (TOut)Array[I]!;
+    /// <typeparam name="TIn">The type of the original input values.</typeparam>
+    /// <typeparam name="TOut">The type to cast the values into.</typeparam>
+    /// <param name="Enum">The collection to iterate.</param>
+    /// <param name="Cto">The casting function to invoke.</param>
+    /// <returns>The cast items.</returns>
+    public static IEnumerable<TOut> Cast<TIn, TOut>( this IEnumerable<TIn> Enum, Func<TIn, TOut> Cto ) {
+        foreach ( TIn Item in Enum ) {
+            yield return Cto(Item);
         }
-        return Res;
     }
 
     /// <summary>
-    /// Constructs a new array with the items in the original array being cast to the desired type.
+    /// Joins the two collections.
     /// </summary>
-    /// <typeparam name="TOut">The type to cast into.</typeparam>
-    /// <param name="Array">The array to cast.</param>
-    /// <returns>A new array of equal length.</returns>
-    public static TOut[] CastArray<TOut>( this object[] Array ) {
-        int L = Array.Length;
-        TOut[] Res = new TOut[L];
-        for ( int I = 0; I < L; I++ ) {
-            object Item = Array[I];
-            Res[I] = (Item switch {
-                // ReSharper disable once HeuristicUnreachableCode
-                null => default,
-                _    => (TOut?)Item
-            })!; //Short of a 'ItemNotNullIfNotNull' attribute, this is the best we can do.
+    /// <typeparam name="TA">The type of items in the first collection.</typeparam>
+    /// <typeparam name="TB">The type of items in the second collection.</typeparam>
+    /// <typeparam name="TJoint">The shared type of items overall.</typeparam>
+    /// <param name="EnumA">The first collection to iterate and return.</param>
+    /// <param name="EnumB">The second collection to iterate and return.</param>
+    /// <returns>The concatenation of the two collections to a shared type.</returns>
+    public static IEnumerable<TJoint> Join<TA, TB, TJoint>( this IEnumerable<TA> EnumA, IEnumerable<TB> EnumB ) where TJoint : TA, TB {
+        foreach ( TA ItemA in EnumA ) {
+            yield return (TJoint)ItemA!;
         }
-        return Res;
+
+        foreach ( TB ItemB in EnumB ) {
+            yield return (TJoint)ItemB!;
+        }
     }
 
     /// <summary>
-    /// Constructs a new array with the items in the original array being cast to the desired type.
+    /// Joins the two collections.
     /// </summary>
-    /// <typeparam name="TIn">The original type of the input.</typeparam>
-    /// <typeparam name="TOut">The type to cast into.</typeparam>
-    /// <param name="Array">The array to cast.</param>
-    /// <returns>A new array of equal length.</returns>
-    public static TOut[] CastArray<TIn, TOut>( this TIn[] Array ) {
-        int L = Array.Length;
-        TOut[] Res = new TOut[L];
-        for ( int I = 0; I < L; I++ ) {
-            TIn Item = Array[I];
-            Res[I] = (Item switch {
-                null => default,
-                _    => (TOut?)(dynamic)Item
-            })!; //Short of a 'ItemNotNullIfNotNull' attribute, this is the best we can do.
+    /// <param name="EnumA">The first collection to iterate and return.</param>
+    /// <param name="EnumB">The second collection to iterate and return.</param>
+    /// <returns>The concatenation of the two collections.</returns>
+    public static IEnumerable Join(this IEnumerable EnumA, IEnumerable EnumB ) {
+        foreach ( object? ItemA in EnumA ) {
+            yield return ItemA;
         }
-        return Res;
+        foreach ( object? ItemB in EnumB ) {
+            yield return ItemB;
+        }
+    }
+
+    /// <summary>
+    /// Joins the specified collections.
+    /// </summary>
+    /// <param name="EnumA">The first collection to iterate and return.</param>
+    /// <param name="Others">The other collections to iterate and return in order.</param>
+    /// <returns>The concatenation of the specified collections.</returns>
+    public static IEnumerable Join( this IEnumerable EnumA, params IEnumerable[] Others ) {
+        foreach ( object? ItemA in EnumA ) {
+            yield return ItemA;
+        }
+        foreach ( IEnumerable Other in Others ) {
+            foreach ( object? OtherItem in Other ) {
+                yield return OtherItem;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Flattens the jagged collections into a single layer.
+    /// </summary>
+    /// <param name="Enums">The collections to iterate and return in order.</param>
+    /// <returns>The elements of each collection in the specified grouping order.</returns>
+    public static IEnumerable Flatten( this IEnumerable<IEnumerable> Enums ) {
+        foreach (IEnumerable Enum in Enums ) {
+            foreach (object? Item in Enum ) {
+                yield return Item;
+            }
+        }
+    }
+
+    /// <inheritdoc cref="Enumerable.Select{TSource, TResult}(IEnumerable{TSource}, Func{TSource, TResult})"/>
+    /// <param name="Source">The collection to iterate.</param>
+    /// <param name="Selector">The selector function.</param>
+    public static IEnumerable<TResult> Select<TResult>( this IEnumerable Source, Func<object?, TResult> Selector ) {
+        foreach ( object? Item in Source ) {
+            yield return Selector(Item);
+        }
+    }
+
+    /// <inheritdoc cref="CreateString{T}(IEnumerable{T}, Func{T, string})"/>
+    public static string CreateString( this IEnumerable Enum ) => $"'{string.Join("', ", Enum)}'";
+
+    /// <inheritdoc cref="CreateString{T}(IEnumerable{T}, Func{T, string})"/>
+    public static string CreateString<T>( this IEnumerable<T> Enum ) => $"'{string.Join("', ", Enum)}'";
+
+    /// <inheritdoc cref="CreateString{T}(IEnumerable{T}, Func{T, string})"/>
+    public static string CreateString( this IEnumerable Enum, Func<object?, string> ToString ) => $"'{string.Join("', ", Enum.Select(ToString))}'";
+
+    /// <summary>
+    /// Creates a string from the given items in the collection.
+    /// </summary>
+    /// <typeparam name="T">The collection containing type.</typeparam>
+    /// <param name="Enum">The collection to iterate.</param>
+    /// <param name="ToString">The function invoked for generating a string representation of each item.</param>
+    /// <returns>A string representation of the entire collection. (i.e. <c>'5', '7.3', '-4.3234'</c>)</returns>
+    public static string CreateString<T>( this IEnumerable<T> Enum, Func<T, string> ToString ) => $"'{string.Join("', ", Enum.Select(ToString))}'";
+
+    /// <summary>
+    /// Determines whether the two pointers are pointing to the same reference.
+    /// </summary>
+    /// <param name="A">The left operand.</param>
+    /// <param name="B">The right operand.</param>
+    /// <returns><see langword="true"/> if <paramref name="A"/>.<see cref="FileSystemInfo.FullName">FullName</see> equals <paramref name="B"/>.<see cref="FileSystemInfo.FullName">FullName</see> (case-insensitive); otherwise <see langword="false"/>.</returns>
+    public static bool Equals( this FileSystemInfo A, FileSystemInfo B ) => A.FullName.Equals(B.FullName, StringComparison.CurrentCultureIgnoreCase);
+
+    /// <summary>
+    /// Grabs the specified amount of items from the collection.
+    /// </summary>
+    /// <typeparam name="T">The collection containing type.</typeparam>
+    /// <param name="Enum">The collection to iterate.</param>
+    /// <param name="L">The maximum amount of items to return. If &lt;= 0, the function returns immediately.</param>
+    /// <param name="Strict">If <see langword="true" />, an <see cref="InvalidOperationException"/> is thrown when the collection is less than the desired length; otherwise if less items are available than requested, the function will just return early.</param>
+    /// <returns>The desired amount of items from the given collection, or less if the collection is smaller and <paramref name="Strict"/> is <see langword="false"/>.</returns>
+    /// <exception cref="InvalidOperationException">$"Attempted to grab <paramref name="L"/> items from a collection with less than the required number of items.</exception>
+    public static IEnumerable<T> Grab<T>( this IEnumerable<T> Enum, int L, bool Strict = false ) {
+        if ( L <= 0 ) { yield break; }
+        int I = 0;
+        foreach ( T Item in Enum ) {
+            yield return Item;
+            I++;
+            if ( I >= L ) { break; }
+        }
+        if ( Strict ) {
+            throw new InvalidOperationException($"Attempted to grab {L} items from a collection with only {I} items.");
+        }
     }
 }

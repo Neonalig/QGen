@@ -26,12 +26,18 @@ namespace QGen.Lib.FileSystem;
 /// </summary>
 public class ParsedFile {
 
+    /// <inheritdoc cref="ParsedFile(FileInfo, ParsedDirectory)"/>
+    /// <remarks>If this <see cref="ParsedFile"/> is constructed relative to a <see cref="ParsedDirectory"/>, use the other constructor (<see langword="new"/> <see cref="ParsedFile(FileInfo, ParsedDirectory)"/>) to avoid excessive, unnecessary memory allocations.</remarks>
+    public ParsedFile( FileInfo Path ) : this (Path, new ParsedDirectory(Path.Directory!)) { }
+
     /// <summary>
     /// Initialises a new instance of the <see cref="ParsedFile"/> class.
     /// </summary>
     /// <param name="Path">The path to the C# source file.</param>
-    public ParsedFile( FileInfo Path ) {
+    /// <param name="Parent">The parent directory.</param>
+    public ParsedFile( FileInfo Path, ParsedDirectory Parent ) {
         this.Path = Path;
+        this.Parent = Parent;
         Lines = new LazyAsync<string[]>(RequestLinesAsync);
         Text = new LazyAsync<string>(RequestTextAsync);
         SourceText = new LazyAsync<SourceText>(RequestSourceTextAsync);
@@ -53,6 +59,11 @@ public class ParsedFile {
     /// The path to the C# source file.
     /// </summary>
     public readonly FileInfo Path;
+
+    /// <summary>
+    /// The parent folder.
+    /// </summary>
+    public readonly ParsedDirectory Parent;
 
     /// <summary>
     /// The lines of text within the file.
@@ -108,4 +119,7 @@ public class ParsedFile {
             yield return Child;
         }
     }
+
+    /// <inheritdoc />
+    public override string ToString() => Path.Name;
 }
