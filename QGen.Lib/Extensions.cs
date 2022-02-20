@@ -8,6 +8,7 @@
 
 #region Using Directives
 
+using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
@@ -626,5 +627,76 @@ public static class Extensions {
             Ls.Add(Enum.Current);
         }
         return Ls;
+    }
+
+    /// <summary>
+    /// Converts the collection to a readonly instance.
+    /// </summary>
+    /// <typeparam name="T">The collection containing type.</typeparam>
+    /// <param name="Enum">The collection to convert. If already of type <see cref="ReadOnlyCollection{T}"/>, nothing is changed. If value is <see langword="null"/>, <see langword="null"/> is returned. Otherwise, a new <see cref="ReadOnlyCollection{T}"/> is constructed.</param>
+    /// <returns>A new/existing <see cref="ReadOnlyCollection{T}"/> based on the given collection.</returns>
+    [return: NotNullIfNotNull("Enum")]
+    public static ReadOnlyCollection<T>? ToReadOnly<T>( this IEnumerable<T>? Enum ) => Enum switch {
+        ReadOnlyCollection<T> Coll => Coll,
+        null                       => null,
+        IList<T> Ls                => new ReadOnlyCollection<T>(Ls),
+        _                          => new ReadOnlyCollection<T>(Enum.ToArray())
+    };
+
+    /// <summary>
+    /// Constructs a new array with the items in the original array being cast to the desired type.
+    /// </summary>
+    /// <typeparam name="TIn">The original type of the input.</typeparam>
+    /// <typeparam name="TOut">The type to cast into.</typeparam>
+    /// <param name="Array">The array to cast.</param>
+    /// <returns>A new array of equal length.</returns>
+    [ItemNotNull]
+    public static TOut[] SafeCastArray<TIn, TOut>( [ItemNotNull] this TIn[] Array ) where TOut : TIn {
+        int L = Array.Length;
+        TOut[] Res = new TOut[L];
+        for ( int I = 0; I < L; I++ ) {
+            Res[I] = (TOut)Array[I]!;
+        }
+        return Res;
+    }
+
+    /// <summary>
+    /// Constructs a new array with the items in the original array being cast to the desired type.
+    /// </summary>
+    /// <typeparam name="TOut">The type to cast into.</typeparam>
+    /// <param name="Array">The array to cast.</param>
+    /// <returns>A new array of equal length.</returns>
+    public static TOut[] CastArray<TOut>( this object[] Array ) {
+        int L = Array.Length;
+        TOut[] Res = new TOut[L];
+        for ( int I = 0; I < L; I++ ) {
+            object Item = Array[I];
+            Res[I] = (Item switch {
+                // ReSharper disable once HeuristicUnreachableCode
+                null => default,
+                _    => (TOut?)Item
+            })!; //Short of a 'ItemNotNullIfNotNull' attribute, this is the best we can do.
+        }
+        return Res;
+    }
+
+    /// <summary>
+    /// Constructs a new array with the items in the original array being cast to the desired type.
+    /// </summary>
+    /// <typeparam name="TIn">The original type of the input.</typeparam>
+    /// <typeparam name="TOut">The type to cast into.</typeparam>
+    /// <param name="Array">The array to cast.</param>
+    /// <returns>A new array of equal length.</returns>
+    public static TOut[] CastArray<TIn, TOut>( this TIn[] Array ) {
+        int L = Array.Length;
+        TOut[] Res = new TOut[L];
+        for ( int I = 0; I < L; I++ ) {
+            TIn Item = Array[I];
+            Res[I] = (Item switch {
+                null => default,
+                _    => (TOut?)(dynamic)Item
+            })!; //Short of a 'ItemNotNullIfNotNull' attribute, this is the best we can do.
+        }
+        return Res;
     }
 }
