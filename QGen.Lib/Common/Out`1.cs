@@ -6,7 +6,7 @@
 // More information can be found here: https://www.gnu.org/licenses/gpl-3.0.en.html
 #endregion
 
-namespace QGen.Lib;
+namespace QGen.Lib.Common;
 
 /// <summary>
 /// Type housing allowing values to be passed through asynchronous methods.

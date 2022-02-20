@@ -19,6 +19,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 using QGen.Core;
+using QGen.Lib.Common;
 
 #endregion
 
@@ -29,6 +30,8 @@ public partial class MainWindow {
     public MainWindow() {
         InitializeComponent();
         DataContext = this;
+
+        //foreach ( )
 
         //Simple replacements for '%UserProfile%/Desktop/template.cs' to '%UserProfile%/Desktop/destfile.cs'
         //TestOne();

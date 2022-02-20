@@ -11,6 +11,8 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
+using QGen.Lib.Common;
+
 #endregion
 
 namespace QGen.Lib;

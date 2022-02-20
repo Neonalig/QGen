@@ -17,6 +17,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 
+using QGen.Lib.Common;
+
 #endregion
 
 namespace QGen.Lib;
@@ -317,26 +319,30 @@ public static class Extensions {
     /// <inheritdoc cref="string.Join(string, string?[])"/>
     /// <param name="Text">The collection of strings to join.</param>
     /// <param name="Separator">The text to place inbetween subsequent strings in the collection.</param>
-    public static string Join( this IEnumerable<string> Text, string Separator ) => string.Join(Separator, Text);
+    [return: NotNullIfNotNull("Text")]
+    public static string? Join( this IEnumerable<string>? Text, string Separator ) => Text is null ? null : string.Join(Separator, Text);
 
     /// <inheritdoc cref="string.Join(string, string?[])"/>
     /// <param name="Text">The collection of objects to join. (<see cref="object.ToString()"/> will be invoked on each)</param>
     /// <param name="Separator">The text to place inbetween subsequent strings in the collection.</param>
-    public static string Join( this IEnumerable<object> Text, string Separator ) => string.Join(Separator, Text);
+    [return: NotNullIfNotNull("Text")]
+    public static string? Join( this IEnumerable<object>? Text, string Separator ) => Text is null ? null : string.Join(Separator, Text);
 
     /// <inheritdoc cref="string.Join(string, string?[])"/>
     /// <typeparam name="T">The type of the objects.</typeparam>
     /// <param name="Text">The collection of objects to join. (the <paramref name="ToString"/> function will be invoked on each)</param>
     /// <param name="Separator">The text to place inbetween subsequent strings in the collection.</param>
     /// <param name="ToString">The function used to convert the object into a relevant <see cref="string"/> representation.</param>
-    public static string Join<T>( this IEnumerable<T> Text, string Separator, Func<T, string> ToString ) => string.Join(Separator, Text.Select(ToString));
+    [return: NotNullIfNotNull("Text")]
+    public static string? Join<T>( this IEnumerable<T>? Text, string Separator, Func<T, string> ToString ) => Text is null ? null : string.Join(Separator, Text.Select(ToString));
 
     /// <summary>
     /// Joins the strings into a single whole string.
     /// </summary>
     /// <param name="Text">The text.</param>
     /// <returns>The concatenation of all the specified strings.</returns>
-    public static string Join( this IEnumerable<string> Text ) => string.Join(string.Empty, Text);
+    [return: NotNullIfNotNull("Text")]
+    public static string? Join( this IEnumerable<string>? Text ) => Text is null ? null : string.Join(string.Empty, Text);
 
     /// <summary>
     /// Splits the specified text.
@@ -602,4 +608,23 @@ public static class Extensions {
         "//------------------------------------------------------------------------------",
         ""
     };
+
+    /// <inheritdoc cref="IterateAsync{T}(IAsyncEnumerator{T}, CancellationToken)"/>
+    public static async Task<List<T>> IterateAsync<T>( this IAsyncEnumerable<T> Enum, CancellationToken Token = new CancellationToken() ) => await IterateAsync(Enum.GetAsyncEnumerator(Token), Token);
+
+    /// <summary>
+    /// Asynchronously iterates through each member in the collection, storing the retrieved values in a <see cref="List{T}"/>.
+    /// </summary>
+    /// <typeparam name="T">The collection containing type.</typeparam>
+    /// <param name="Enum">The asynchronous enumerable to iterate.</param>
+    /// <param name="Token">The cancellation token.</param>
+    /// <returns>An asynchronous task which stores all items in the collection in a <see cref="List{T}"/>.</returns>
+    public static async Task<List<T>> IterateAsync<T>( this IAsyncEnumerator<T> Enum, CancellationToken Token = new CancellationToken() ) {
+        List<T> Ls = new List<T>();
+        while ( true ) {
+            if ( !await Enum.MoveNextAsync() ) { break; }
+            Ls.Add(Enum.Current);
+        }
+        return Ls;
+    }
 }
