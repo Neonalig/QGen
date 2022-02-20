@@ -10,6 +10,8 @@
 
 using System.Text.RegularExpressions;
 
+using QGen.Lib.Common;
+
 #endregion
 
 namespace QGen.Lib;
@@ -32,6 +34,7 @@ public interface IMatchGenerator {
     /// </summary>
     /// <param name="Match">The matched text.</param>
     /// <param name="Line">The line of text that was matched.</param>
-    string Generate( Match Match, string Line );
+    /// <returns>The portion of text to replace the matched text with.</returns>
+    Result<string> Generate( Match Match, string Line );
 
 }
