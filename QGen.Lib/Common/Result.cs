@@ -231,7 +231,7 @@ public interface IResult {
 /// Represents the result of a method and its related diagnostic data.
 /// </summary>
 /// <typeparam name="T">The resultant value type.</typeparam>
-public interface IResult<T> : IResult {
+public interface IResult<out T> : IResult {
 
     /// <summary>
     /// Gets the resultant value.

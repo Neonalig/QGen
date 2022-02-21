@@ -59,6 +59,17 @@ public class ScriptGenerator {
                     }
                     break;
                 case IFileCreator Crt:
+                    int I = 0;
+                    foreach ( string Dest in Crt.DestinationFiles ) {
+                        if ( !Dir.TryGetFile(Dest, out ParsedFile? DestFile) ) {
+                            return Result.FilePathInvalid(Dest);
+                        }
+
+                        if ( DestFile.Exists ) { DestFile.Delete(); }
+
+
+                        I++;
+                    }
                     break;
                 default:
                     throw new IndexOutOfRangeException();

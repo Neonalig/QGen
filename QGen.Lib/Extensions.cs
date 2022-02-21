@@ -11,6 +11,7 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 using JetBrains.Annotations;
@@ -795,4 +796,116 @@ public static class Extensions {
         Value = default;
         return false;
     }
+
+    /// <summary>
+    /// Asynchronously attempts to get the resultant value of the method, returning <see langword="true"/> if the result was a success.
+    /// </summary>
+    /// <param name="ResultTask">The task to await.</param>
+    /// <param name="Token">The cancellation token.</param>
+    /// <returns><see langword="true"/> if the result was a success; otherwise <see langword="false"/>.</returns>
+    public static async Task<(bool Success, T Value)> TryGetValueAsync<T>( this Func<CancellationToken, Task<Result<T>>> ResultTask, CancellationToken Token = new() ) {
+        bool Success = TryGetValue(await ResultTask(Token), out T? Value);
+        return (Success, Value!);
+    }
+
+    /// <summary>
+    /// Asynchronously attempts to get the resultant value of the method, returning <see langword="true"/> if the result was a success.
+    /// </summary>
+    /// <param name="ResultTask">The task to await.</param>
+    /// <returns><see langword="true"/> if the result was a success; otherwise <see langword="false"/>.</returns>
+    public static async Task<(bool Success, T Value)> TryGetValueAsync<T>( this Task<Result<T>> ResultTask ) {
+        bool Success = TryGetValue(await ResultTask, out T? Value);
+        return (Success, Value!);
+    }
+
+    /// <summary>
+    /// Outputs the specified value from the tuple, returning <see langword="true"/> if the result is a success.
+    /// </summary>
+    /// <typeparam name="T">The value type.</typeparam>
+    /// <param name="Tuple">The tuple.</param>
+    /// <param name="Value">The value.</param>
+    /// <returns><see langword="true"/> if the result was a success; otherwise <see langword="false"/>.</returns>
+    public static bool Output<T>( this (bool Success, T Value) Tuple, [NotNullWhen(true)] out T? Value ) {
+        (bool Succ, T? Val) = Tuple;
+        if ( Succ ) {
+            Value = Val!;
+            return true;
+        }
+        Value = default;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to enumerate the resultant values.
+    /// </summary>
+    /// <typeparam name="T">The collection containing type.</typeparam>
+    /// <param name="Result">The result.</param>
+    /// <param name="Success">Whether the result was successful.</param>
+    /// <returns>The collection to enumerate.</returns>
+    public static IEnumerable<T> TryEnumerate<T>( this Result<IEnumerable<T>> Result, out bool Success ) {
+        if ( !Result.Success ) {
+            Success = false;
+            return Enumerable.Empty<T>();
+        }
+        Success = true;
+        return Result.Value;
+    }
+
+    /// <summary>
+    /// Attempts to enumerate the resultant values.
+    /// </summary>
+    /// <typeparam name="T">The collection containing type.</typeparam>
+    /// <param name="ResultTask">The result.</param>
+    /// <param name="Success">Whether the result was successful.</param>
+    /// <returns>The collection to enumerate.</returns>
+    public static async IAsyncEnumerable<T> TryEnumerateAsync<T>( this Task<Result<IEnumerable<T>>> ResultTask, Out<bool> Success ) {
+        Result<IEnumerable<T>> Result = await ResultTask;
+        if ( !Result.Success ) {
+            Success.Value = false;
+            yield break;
+        }
+        Success.Value = true;
+        foreach ( T Item in Result.Value ) {
+            yield return Item;
+        }
+    }
+
+#pragma warning disable CS1998
+    public static async IAsyncEnumerable<T> EmptyAsync<T>() {
+        yield break;
+    }
+#pragma warning restore CS1998
+
+#pragma warning disable CS1998
+    public static async IAsyncEnumerable<T> AsAsync<T>(this IEnumerable<T> Enum ) {
+        foreach ( T Item in Enum ) {
+            yield return Item;
+        }
+    }
+#pragma warning restore CS1998
+
+    static async Task<IReadOnlyList<T>> GetAwaiterTask<T>( this IAsyncEnumerator<T> Enum, CancellationToken Token = new() ) {
+        if ( Token.IsCancellationRequested ) { return Array.Empty<T>().ToReadOnly(); }
+        List<T> Ls = new List<T>();
+        while ( true ) {
+            if ( Token.IsCancellationRequested ) { break; }
+            if ( !await Enum.MoveNextAsync() ) {
+                break;
+            }
+            if ( Token.IsCancellationRequested ) { break; }
+            Ls.Add(Enum.Current);
+        }
+        return Ls.AsReadOnly();
+    }
+
+    static async Task<IReadOnlyList<T>> GetAwaiterTask<T>( this IAsyncEnumerable<T> Enum, CancellationToken Token = new() ) => await GetAwaiterTask(Enum.GetAsyncEnumerator(Token), Token);
+
+    public static TaskAwaiter<IReadOnlyList<T>> GetAwaiter<T>( this IAsyncEnumerator<T> Enum ) => Enum.GetAwaiterTask().GetAwaiter();
+    public static TaskAwaiter<IReadOnlyList<T>> GetAwaiter<T>( this IAsyncEnumerator<T> Enum, CancellationToken Token ) => Enum.GetAwaiterTask(Token).GetAwaiter();
+
+    public static TaskAwaiter<IReadOnlyList<T>> GetAwaiter<T>( this IAsyncEnumerable<T> Enum ) => Enum.GetAwaiterTask().GetAwaiter();
+    public static TaskAwaiter<IReadOnlyList<T>> GetAwaiter<T>( this IAsyncEnumerable<T> Enum, CancellationToken Token ) => Enum.GetAwaiterTask(Token).GetAwaiter();
+
+    public static TaskAwaiter<T> GetAwaiter<T>( this TaskAwaiter<T> Awaiter ) => Awaiter;
+    public static TaskAwaiter GetAwaiter( this TaskAwaiter Awaiter ) => Awaiter;
 }
