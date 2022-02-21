@@ -58,7 +58,8 @@ public class ParsedFile : FileSystemInfo {
         Text = new LazyAsync<string>(RequestTextAsync);
         SourceText = new LazyAsync<SourceText>(RequestSourceTextAsync);
         SyntaxTree = new LazyAsync<SyntaxTree>(RequestSyntaxTreeAsync);
-        RootNode = new LazyAsync<CompilationUnitSyntax>(RequestRootNodeAsync);
+        CompilationUnitRoot = new LazyAsync<CompilationUnitSyntax>(RequestCompilationUnitRootAsync);
+        RootNode = new LazyAsync<SyntaxNode>(RequestRootNodeAsync);
         ChildNodesAndTokens = new LazyAsyncEnumerable<SyntaxNodeOrToken>(RequestChildNodesAndTokensAsync);
         ChildNodes = new LazyAsyncEnumerable<SyntaxNode>(RequestChildNodesAsync);
 
@@ -108,11 +109,18 @@ public class ParsedFile : FileSystemInfo {
     async Task<SyntaxTree> RequestSyntaxTreeAsync( CancellationToken Token = default ) => CSharpSyntaxTree.ParseText(await SourceText.GetValueAsync(Token), path: Path.FullName, cancellationToken: Token);
 
     /// <summary>
+    /// The compilation unit syntax root from the parsed syntax tree.
+    /// </summary>
+    /// <seealso cref="SyntaxTree"/>
+    public LazyAsync<CompilationUnitSyntax> CompilationUnitRoot;
+    async Task<CompilationUnitSyntax> RequestCompilationUnitRootAsync( CancellationToken Token = default ) => (await SyntaxTree.GetValueAsync(Token)).GetCompilationUnitRoot(Token);
+
+    /// <summary>
     /// The root node from the parsed syntax tree.
     /// </summary>
     /// <seealso cref="SyntaxTree"/>
-    public LazyAsync<CompilationUnitSyntax> RootNode;
-    async Task<CompilationUnitSyntax> RequestRootNodeAsync( CancellationToken Token = default ) => (await SyntaxTree.GetValueAsync(Token)).GetCompilationUnitRoot(Token);
+    public LazyAsync<SyntaxNode> RootNode;
+    async Task<SyntaxNode> RequestRootNodeAsync( CancellationToken Token = default ) => await (await SyntaxTree.GetValueAsync(Token)).GetRootAsync(Token);
 
     /// <summary>
     /// The list of child nodes and tokens of the <see cref="RootNode"/> (where each element is a <see cref="SyntaxNodeOrToken"/> element).

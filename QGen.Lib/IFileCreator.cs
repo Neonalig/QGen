@@ -34,7 +34,8 @@ public interface IFileCreator : IFileGenerator {
     /// <param name="RootDirectory">The root directory.</param>
     /// <param name="CreationIndex">The current index of which destination file is being created.</param>
     /// <param name="DestinationFile">The path to the destination file location.</param>
+    /// <param name="Token">The cancellation token.</param>
     /// <returns>The lines of text to write in the destination file.</returns>
-    Task<Result<IEnumerable<string>>> CreateAsync( ParsedDirectory RootDirectory, int CreationIndex, ParsedFile DestinationFile );
+    Task<Result<IEnumerable<string>>> CreateAsync( ParsedDirectory RootDirectory, int CreationIndex, ParsedFile DestinationFile, CancellationToken Token );
 
 }

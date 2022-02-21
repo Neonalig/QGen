@@ -8,13 +8,18 @@
 
 #region Using Directives
 
-using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 #endregion
 
 namespace QGen.Lib.Common;
 
 public sealed class Result : IResult {
+
+#if DEBUG
+    /// <inheritdoc />
+    public object? Val => null;
+#endif
 
     /// <summary>
     /// Initialises a new instance of the <see cref="Result"/> class.
@@ -86,6 +91,30 @@ public sealed class Result : IResult {
     /// </returns>
     public static explicit operator Result( bool Success ) => new Result(Success);
 
+    static readonly Result _CancelledResult = new Result(false, "The task was cancelled.");
+
+    /// <summary>
+    /// The default 'successful' result.
+    /// </summary>
+    public static readonly Result Successful = new Result(true);
+
+    /// <summary>
+    /// The default 'unexpected error' result.
+    /// </summary>
+    public static readonly Result UnexpectedError = new Result(false);
+
+    /// <summary>
+    /// The default result to return when <see cref="CancellationToken.IsCancellationRequested"/> becomes <see langword="true"/>.
+    /// </summary>
+    public static Result Cancelled() => _CancelledResult;
+
+    /// <summary>
+    /// The result to return when <see cref="CancellationToken.IsCancellationRequested"/> becomes <see langword="true"/>.
+    /// </summary>
+    /// <param name="Verbose">If <see langword="true"/>, the name of the calling member (task method name) is included in the diagnostics message.</param>
+    /// <param name="CallerMemberName">The name of the calling member.</param>
+    public static Result Cancelled( bool Verbose, [CallerMemberName] string CallerMemberName = "" ) => Verbose ? new Result(false, $"The task '{CallerMemberName}' was cancelled.") : _CancelledResult;
+
     /// <summary>
     /// An unsuccessful result related to a file path being invalid.
     /// </summary>
@@ -107,156 +136,21 @@ public sealed class Result : IResult {
     /// <returns>A new <see cref="Result"/> instance.</returns>
     public static Result LookupFailed( IFileGenerator Generator ) => new Result(false, $"Attempted file lookup on the source generator '{Generator.Name}' (v{Generator.Version}) failed.");
 
-}
-
-public sealed class Result<T> : IResult<T> {
+    /// <summary>
+    /// Logs the current result to the debug trace listeners.
+    /// </summary>
+    [Conditional("DEBUG")]
+    public void Log() => Debug.WriteLine($"The method executed with the message: \"{Message}\".", Success ? "SUCCESS" : "ERROR");
 
     /// <summary>
-    /// Initialises a new instance of the <see cref="Result"/> class.
+    /// Logs the current result to the debug trace listeners.
     /// </summary>
-    /// <param name="Success">Whether the result is a success.</param>
-    /// <param name="Message">The related diagnostic message.</param>
-    /// <param name="Value">The resultant value of the method execution.</param>
-    public Result( bool Success, string Message, T Value ) {
-        this.Success = Success;
-        this.Message = Message;
-        _Value = Value;
-    }
-
-    /// <summary>
-    /// Initialises a new instance of the <see cref="Result"/> class.
-    /// </summary>
-    /// <param name="Value">The resultant value of the method execution. The execution result is assumed unsuccessful if the supplied value is <see langword="null"/>.</param>
-    public Result( T? Value ) : this(Value is not null, Value is not null ? Result.MsgSuccess : Result.MsgError, Value!) { }
-
-    #region Implementation of IResult
-
-    /// <inheritdoc />
-    public bool Success { get; }
-
-    /// <inheritdoc />
-    public string Message { get; }
-
-    #endregion
-
-    /// <summary>
-    /// Performs an <see langword="implicit"/> conversion from <see cref="Result"/> to <see cref="bool"/>.
-    /// </summary>
-    /// <param name="Result">The result to convert.</param>
-    /// <returns>
-    /// Whether the result was successful.
-    /// </returns>
-    public static implicit operator bool( Result<T> Result ) => Result.Success;
-
-    /// <summary>
-    /// Performs an <see langword="implicit"/> conversion from <see cref="Result"/> to <typeparamref name="T"/>.
-    /// </summary>
-    /// <param name="Result">The result to convert.</param>
-    /// <returns>
-    /// The resultant value of the method execution.
-    /// </returns>
-    /// <see cref="InvalidOperationException">The result value was attempted to be retrieved when the method execution was unsuccessful. <see cref="Value"/> can only be retrieved when <see cref="IResult.Success"/> is <see langword="true"/>.</see>
-    [DebuggerHidden]
-    public static implicit operator T( Result<T> Result ) => Result.Value;
-
-    /// <summary>
-    /// Performs an explicit conversion from <see cref="Result"/> to <see cref="string"/>.
-    /// </summary>
-    /// <param name="Result">The result to convert.</param>
-    /// <returns>The related diagnostic message.
-    /// </returns>
-    public static explicit operator string( Result<T> Result ) => Result.Message;
-
-    /// <summary>
-    /// Performs an explicit conversion from <typeparamref name="T"/> to <see cref="Result{T}"/>.
-    /// </summary>
-    /// <param name="Value">The resultant value of the method execution. The execution result is assumed unsuccessful if the supplied value is <see langword="null"/>.</param>
-    /// <returns>
-    /// A new <see cref="Result{T}"/> instance utilising the '<see langword="new"/> <see cref="Result{T}(T?)"/>' constructor.
-    /// </returns>
-    public static explicit operator Result<T>( T? Value ) => new Result<T>(Value);
-
-    #region Implementation of IResult<T>
-
-    readonly T _Value;
-
-    /// <inheritdoc />
-    public T Value {
-        [DebuggerHidden]
-        get {
-            if ( !Success ) {
-                throw new InvalidOperationException("The result value was attempted to be retrieved when the method execution was unsuccessful. The value can only be retrieved when Result<T>.Success is true.");
-            }
-            return _Value;
+    /// <param name="WhenSuccess">If <see langword="false"/>, successful results are <b>not</b> logged; otherwise all results are logged regardless of being successful or not.</param>
+    [Conditional("DEBUG")]
+    public void Log( bool WhenSuccess ) {
+        if ( !Success || WhenSuccess ) {
+            Log();
         }
     }
-
-    #endregion
-}
-
-/// <summary>
-/// Represents the result of a method and its related diagnostic data.
-/// </summary>
-public interface IResult {
-
-    /// <summary>
-    /// Gets a value indicating whether the result is a success.
-    /// </summary>
-    /// <value>
-    /// <see langword="true" /> if the function was successful; otherwise, <see langword="false" />.
-    /// </value>
-    bool Success { get; }
-
-    /// <summary>
-    /// Gets the diagnostic message related to this message.
-    /// </summary>
-    /// <value>
-    /// The diagnostic message.
-    /// </value>
-    string Message { get; }
-
-    /// <summary>
-    /// The default 'successful' result.
-    /// </summary>
-    public static readonly Result Successful = new Result(true);
-
-    /// <summary>
-    /// The default 'unexpected error' result.
-    /// </summary>
-    public static readonly Result UnexpectedError = new Result(false);
-
-}
-
-/// <summary>
-/// Represents the result of a method and its related diagnostic data.
-/// </summary>
-/// <typeparam name="T">The resultant value type.</typeparam>
-public interface IResult<out T> : IResult {
-
-    /// <summary>
-    /// Gets the resultant value.
-    /// </summary>
-    /// <value>
-    /// The value of the result.
-    /// </value>
-    /// <see cref="InvalidOperationException">The result value was attempted to be retrieved when the method execution was unsuccessful. <see cref="Value"/> can only be retrieved when <see cref="IResult.Success"/> is <see langword="true"/>.</see>
-    T Value { get; }
-
-#pragma warning disable IDE0079 // Remove unnecessary suppression
-#pragma warning disable CS0109 // Member does not hide an inherited member; new keyword is not required.
-    //'new' keyword IS required as it hides a static field in a derived interface.
-
-    /// <summary>
-    /// The default 'successful' result.
-    /// </summary>
-    /// <remarks>The resultant value is equivalent to <see langword="default"/>(<see cref="Result{T}"/>).</remarks>
-    public new static readonly Result<T> Successful = new Result<T>(true, Result.MsgSuccess, default!);
-
-    /// <summary>
-    /// The default 'unexpected error' result.
-    /// </summary>
-    public new static readonly Result<T> UnexpectedError = new Result<T>(false, Result.MsgError, default!);
-#pragma warning restore CS0109 // Member does not hide an inherited member; new keyword is not required.
-#pragma warning restore IDE0079 // Remove unnecessary suppression
 
 }

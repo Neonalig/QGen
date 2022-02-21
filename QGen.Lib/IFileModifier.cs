@@ -43,7 +43,8 @@ public interface IFileModifier : IFileGenerator {
     /// <param name="RootDirectory">The root directory.</param>
     /// <param name="TemplateFile">The template file to read data from.</param>
     /// <param name="DestinationFile">The path to the desired destination file.</param>
+    /// <param name="Token">The cancellation token.</param>
     /// <returns>The collection of match generators to use on the destination file based upon the contents of the template file.</returns>
-    Task<Result<IEnumerable<IMatchGenerator>>> LookupAsync( ParsedDirectory RootDirectory, ParsedFile TemplateFile, ParsedFile DestinationFile );
+    Task<Result<IEnumerable<IMatchGenerator>>> LookupAsync( ParsedDirectory RootDirectory, ParsedFile TemplateFile, ParsedFile DestinationFile, CancellationToken Token );
 
 }

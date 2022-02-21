@@ -130,6 +130,19 @@ public class ParsedDirectory : IReadOnlyList<ParsedFile>, IReadOnlyList<ParsedDi
                && Parent.Files.TryGetFirst(PF => PF.Path.Name.Equals(Crumbs[L - 1], StringComparison.CurrentCultureIgnoreCase), out Found);
     }
 
+    static bool TryTreadToPointer( ParsedDirectory Root, string Path, out ParsedFile? Found ) {
+        string[] Crumbs = Path.Split('\\');
+        int L = Crumbs.Length;
+        Found = null;
+        if ( TryTread(Root, Crumbs.Grab(L - 1), out ParsedDirectory? Parent) ) {
+            if ( !Parent.Files.TryGetFirst(PF => PF.Path.Name.Equals(Crumbs[L - 1], StringComparison.CurrentCultureIgnoreCase), out Found) ) {
+                Found = new ParsedFile(Parent.Path.GetSubFile(Crumbs[L - 1]));
+            }
+            return true;
+        }
+        return false;
+    }
+
     /// <summary>
     /// Attempts to retrieve the subfolder with the given relative path.
     /// </summary>
@@ -165,6 +178,21 @@ public class ParsedDirectory : IReadOnlyList<ParsedFile>, IReadOnlyList<ParsedDi
         return Path.Contains('\\')
             ? TryTread(this, Path, out Found)
             : Files.TryGetFirst(PF => PF.Path.Name.Equals(Path, StringComparison.CurrentCultureIgnoreCase), out Found);
+    }
+
+    /// <summary>
+    /// Attempts to retrieve the file with the given relative path, creating a pointer to the desired destination if it does not yet exist.
+    /// </summary>
+    /// <param name="Path">The relative path. (i.e. "foo/bar/quz.mp3", "baz.txt")</param>
+    /// <param name="Found">The found file, or <see langword="null"/> if <see langword="false"/> (unsuccessful).</param>
+    /// <returns><see langword="true"/> if the file path was valid; otherwise <see langword="false"/>.</returns>
+    public bool TryGetFilePointer( string Path, [NotNullWhen(true)] out ParsedFile? Found ) {
+        Path = Path.ToInvariant().Replace('/', '\\').TrimEnd('\\');
+        if ( Path.Contains('\\') ) {
+            return TryTreadToPointer(this, Path, out Found);
+        }
+        Found = new ParsedFile(this.Path.GetSubFile(Path));
+        return true;
     }
 
     /// <summary>

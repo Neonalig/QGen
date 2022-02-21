@@ -16,10 +16,10 @@ using System.Windows.Controls;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 using QGen.Core;
 using QGen.Lib.Common;
+using QGen.Lib.FileSystem;
 
 #endregion
 
@@ -59,7 +59,7 @@ public partial class MainWindow {
         public string Name => @"exMethods";
 
         /// <inheritdoc />
-        public string Generate( Match Match, string Line ) {
+        public Result<string> Generate( Match Match, string Line ) {
             int Sp = 0;
             foreach ( char C in Line ) {
                 switch ( C ) {
@@ -83,7 +83,7 @@ public partial class MainWindow {
         public string Name => @"exCond";
 
         /// <inheritdoc />
-        public string Generate( Match Match, string Line ) =>
+        public Result<string> Generate( Match Match, string Line ) =>
             //""
             ", \"RELEASE\""
         ;
@@ -116,7 +116,8 @@ public partial class MainWindow {
     static async Task TestTwoAsync() {
         DirectoryInfo ReadDir = new DirectoryInfo("E:\\Projects\\Visual Studio\\QGen\\QGen.Sample");
 
-        await ScriptGenerator.GenerateAsync(ReadDir, SearchOption.TopDirectoryOnly, new [] { new InputHelper_AG() }, new CancellationToken());
+        Result Res = await ScriptGenerator.GenerateAsync(ReadDir, new [] { new InputHelper_AG() }, new CancellationToken());
+        Res.Log();
     }
 
     public class InputHelper_AG : IFileModifier {
@@ -124,25 +125,31 @@ public partial class MainWindow {
         public string Name => "InputHelper-GenUtil";
 
         /// <inheritdoc />
-        public Version Version { get; } = new Version(0, 1, 0);
+        public Version Version { get; } = new Version(0, 2, 0);
+
+        #region Implementation of IFileModifier
 
         /// <inheritdoc />
-        public string RequestedPath => "InputHelperAG";
+        public string TemplatePath => "InputHelperAG.auto.cs";
 
         /// <inheritdoc />
-        public async Task ReadAsync( FileInfo Path, SyntaxTree Tree, CompilationUnitSyntax Root, Out<IEnumerable<IMatchGenerator>> Generators, CancellationToken Token = default ) {
-            Debug.WriteLine("Reading...");
-            FileInfo KIFile = Path.Directory!.GetSubFile("KnownInput.cs");
-            SyntaxTree KITree = await KIFile.GetSyntaxTreeAsync(Token);
-            Debug.WriteLine("Got syntax tree.");
-            SyntaxNode TreeRoot = await KITree.GetRootAsync(Token);
+        public string DestinationPath => "InputHelperAG.cs";
 
+        /// <inheritdoc />
+        public async Task<Result<IEnumerable<IMatchGenerator>>> LookupAsync( ParsedDirectory RootDirectory, ParsedFile TemplateFile, ParsedFile DestinationFile, CancellationToken Token ) {
+
+            Debug.WriteLine($"Reading from template file '{TemplateFile}'...");
+
+            ParsedFile EnumFile = RootDirectory["KnownInput.cs"];
+
+            SyntaxNode TreeRoot = await EnumFile.RootNode;
             bool Ready = false;
             List<string> Usings = new List<string>();
             List<(string Name, string AssetPath, string Type)> EnumMembers = new List<(string Name, string AssetPath, string Type)>();
 
             (SyntaxToken NameToken, SyntaxToken? AssetPathToken, SyntaxToken? TypeToken)? KIMatch = null;
             foreach ( SyntaxNode KINode in TreeRoot.IterateAllNodes() ) {
+                Debug.WriteLine($"\tNode: {KINode}.");
                 if ( !Ready ) {
                     if ( KINode.IsKind(SyntaxKind.UsingDirective) ) {
                         Usings.Add(KINode.ToString());
@@ -155,7 +162,7 @@ public partial class MainWindow {
                 SyntaxToken[] Tks = KINode.ChildTokens().ToArray();
 
                 if ( KIMatch is null ) {
-                    if ( Tks.TryGetFirst(STk => STk.IsKind(SyntaxKind.IdentifierToken), out SyntaxToken NameToken)) {
+                    if ( Tks.TryGetFirst(STk => STk.IsKind(SyntaxKind.IdentifierToken), out SyntaxToken NameToken) ) {
                         KIMatch = (NameToken, null, null);
                     }
                 } else {
@@ -163,20 +170,22 @@ public partial class MainWindow {
                         if ( Tks.TryGetFirst(STk => STk.IsKind(SyntaxKind.StringLiteralToken), out SyntaxToken AssetPathToken) ) {
                             KIMatch = (KIMatch.Value.NameToken, AssetPathToken, null);
                         }
-                    } else if (Tks.TryGetFirst(Stk => Stk.RawKind.Equals((int)SyntaxKind.BoolKeyword, (int)SyntaxKind.ByteKeyword, (int)SyntaxKind.DecimalKeyword, (int)SyntaxKind.DoubleKeyword, (int)SyntaxKind.FloatKeyword, (int)SyntaxKind.IntKeyword, (int)SyntaxKind.LongKeyword, (int)SyntaxKind.NullKeyword, (int)SyntaxKind.ObjectKeyword, (int)SyntaxKind.SByteKeyword, (int)SyntaxKind.StringKeyword, (int)SyntaxKind.UIntKeyword, (int)SyntaxKind.ULongKeyword, (int)SyntaxKind.UShortKeyword, (int)SyntaxKind.IdentifierToken), out SyntaxToken TypeToken)) {
+                    } else if ( Tks.TryGetFirst(Stk => Stk.RawKind.Equals((int)SyntaxKind.BoolKeyword, (int)SyntaxKind.ByteKeyword, (int)SyntaxKind.DecimalKeyword, (int)SyntaxKind.DoubleKeyword, (int)SyntaxKind.FloatKeyword, (int)SyntaxKind.IntKeyword, (int)SyntaxKind.LongKeyword, (int)SyntaxKind.NullKeyword, (int)SyntaxKind.ObjectKeyword, (int)SyntaxKind.SByteKeyword, (int)SyntaxKind.StringKeyword, (int)SyntaxKind.UIntKeyword, (int)SyntaxKind.ULongKeyword, (int)SyntaxKind.UShortKeyword, (int)SyntaxKind.IdentifierToken), out SyntaxToken TypeToken) ) {
                         EnumMembers.Add((KIMatch.Value.NameToken.Text, KIMatch.Value.AssetPathToken.Value.Text, TypeToken.Text));
                         KIMatch = null;
                     }
                 }
             }
-            
-            Generators.Value = new IMatchGenerator[] {
+
+            return new IMatchGenerator[] {
                 new InputHelper_OtherUsings().Init(Usings),
                 new InputHelper_CtoInputs().Init(EnumMembers),
                 new InputHelper_UpdInputs().Init(EnumMembers),
                 new InputHelper_InputFlds().Init(EnumMembers)
-            };
+            }.AsEnumerable().GetResult(true);
         }
+
+        #endregion
     }
 
     /// <summary />
@@ -191,10 +200,10 @@ public partial class MainWindow {
         public string Name => "OtherUsings";
 
         /// <summary />
-        string _Content = string.Empty;
+        Result<string> _Content = string.Empty;
 
         /// <inheritdoc />
-        public string Generate( Match Match, string Line ) => _Content;
+        public Result<string> Generate( Match Match, string Line ) => _Content;
     }
 
     /// <summary />
@@ -218,13 +227,13 @@ public partial class MainWindow {
             return this;
         }
 
-        string _Content = string.Empty;
+        Result<string> _Content = string.Empty;
 
         /// <inheritdoc />
         public string Name => "CtoInputs";
 
         /// <inheritdoc />
-        public string Generate( Match Match, string Line ) => _Content;
+        public Result<string> Generate( Match Match, string Line ) => _Content;
     }
 
     /// <summary />
@@ -243,13 +252,13 @@ public partial class MainWindow {
             return this;
         }
 
-        string _Content = string.Empty;
+        Result<string> _Content = string.Empty;
 
         /// <inheritdoc />
         public string Name => "UpdInputs";
 
         /// <inheritdoc />
-        public string Generate( Match Match, string Line ) => _Content;
+        public Result<string> Generate( Match Match, string Line ) => _Content;
     }
 
     /// <summary />
@@ -270,13 +279,13 @@ public partial class MainWindow {
             return this;
         }
 
-        string _Content = string.Empty;
+        Result<string> _Content = string.Empty;
 
         /// <inheritdoc />
         public string Name => "InputFlds";
 
         /// <inheritdoc />
-        public string Generate( Match Match, string Line ) => _Content;
+        public Result<string> Generate( Match Match, string Line ) => _Content;
     }
 
     #endregion
