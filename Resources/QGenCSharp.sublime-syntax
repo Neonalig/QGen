@@ -1,0 +1,25 @@
+%YAML 1.2
+---
+# See http://www.sublimetext.com/docs/3/syntax.html
+name: QGen C#
+scope: source.autocs
+extends: Packages/C#/C#.sublime-syntax
+
+file_extensions:
+  - auto.cs
+  - auto.csx
+hidden_file_extensions:
+  - cs
+  - csx
+
+contexts:
+  main:
+    - match: ""
+      push: "Packages/C#/C#.sublime-syntax"
+      with_prototype:
+        - match: \$\(
+          push: hotpoint
+  hotpoint:
+    - meta_scope: autocs.hotpoint
+    - match: \)
+      pop: true

@@ -28,6 +28,7 @@
     <None Remove="Resources\Icon-CREDIT.md" />
     <None Remove="Resources\Icon.ico" />
     <None Remove="Resources\Icon.pdn" />
+    <None Remove="Resources\QGenCSharp.sublime-syntax" />
   </ItemGroup>
 
   <ItemGroup>
