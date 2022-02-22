@@ -22,8 +22,6 @@ using Microsoft.CodeAnalysis.Text;
 
 using QGen.Lib.Common;
 
-using NotNullAttribute = System.Diagnostics.CodeAnalysis.NotNullAttribute;
-
 #endregion
 
 namespace QGen.Lib;
@@ -844,7 +842,7 @@ public static class Extensions {
     }
 #pragma warning restore CS1998
 
-    static async Task<IReadOnlyList<T>> GetAwaiterTask<T>( this IAsyncEnumerator<T> Enum, CancellationToken Token = new() ) {
+    static async Task<IReadOnlyList<T>> GetAwaiterTask<T>( this IAsyncEnumerator<T> Enum, CancellationToken Token = new CancellationToken() ) {
         if ( Token.IsCancellationRequested ) { return Array.Empty<T>().ToReadOnly(); }
         List<T> Ls = new List<T>();
         while ( true ) {
@@ -858,7 +856,7 @@ public static class Extensions {
         return Ls.AsReadOnly();
     }
 
-    static async Task<IReadOnlyList<T>> GetAwaiterTask<T>( this IAsyncEnumerable<T> Enum, CancellationToken Token = new() ) => await GetAwaiterTask(Enum.GetAsyncEnumerator(Token), Token);
+    static async Task<IReadOnlyList<T>> GetAwaiterTask<T>( this IAsyncEnumerable<T> Enum, CancellationToken Token = new CancellationToken() ) => await GetAwaiterTask(Enum.GetAsyncEnumerator(Token), Token);
 
     public static TaskAwaiter<IReadOnlyList<T>> GetAwaiter<T>( this IAsyncEnumerator<T> Enum ) => Enum.GetAwaiterTask().GetAwaiter();
     public static TaskAwaiter<IReadOnlyList<T>> GetAwaiter<T>( this IAsyncEnumerator<T> Enum, CancellationToken Token ) => Enum.GetAwaiterTask(Token).GetAwaiter();
@@ -872,7 +870,7 @@ public static class Extensions {
     public static TaskAwaiter<T> GetAwaiter<T>( this LazyAsync<T> Async ) => Async.GetValueAsync().GetAwaiter();
     public static TaskAwaiter<T> GetAwaiter<T>( this LazyAsync<T> Async, CancellationToken Token ) => Async.GetValueAsync(Token).GetAwaiter();
 
-    public static TaskAwaiter<ReadOnlyCollection<T>> GetAwaiter<T>( this LazyAsyncEnumerable<T> Async, CancellationToken Token = new() ) => Async.GetValuesAsync(Token).GetAwaiter();
+    public static TaskAwaiter<ReadOnlyCollection<T>> GetAwaiter<T>( this LazyAsyncEnumerable<T> Async, CancellationToken Token = new CancellationToken() ) => Async.GetValuesAsync(Token).GetAwaiter();
 
     /// <summary>
     /// Logs the current result to the debug trace listeners.
@@ -904,7 +902,7 @@ public static class Extensions {
 #if DEBUG
         Debug.WriteLine(Result.Val switch {
             { } V => $"The method executed with the message: \"{Result.Message}\". (Value: '{V}')",
-            _     => $"The method executed with the message: \"{Result.Message}\".",
+            _     => $"The method executed with the message: \"{Result.Message}\"."
         }, Result.Success ? "SUCCESS" : "ERROR");
 #else
         Debug.WriteLine($"The method executed with the message: \"{Result.Message}\".", Result.Success ? "SUCCESS" : "ERROR");
@@ -1130,7 +1128,7 @@ public static class Extensions {
     /// <param name="Val">The first value.</param>
     /// <param name="Other">The other (fallback) value.</param>
     /// <returns>The first non-<see langword="null"/> value.</returns>
-    [return: NotNull]
+    [return: System.Diagnostics.CodeAnalysis.NotNull]
     public static T Or<T>( this T? Val, [DisallowNull] T Other ) => Val is null ? Other : Val;
 
     /// <summary>
@@ -1148,7 +1146,7 @@ public static class Extensions {
     /// <param name="Vals">The values to check.</param>
     /// <param name="Fallback">The fallback value if all else is <see langword="null"/>.</param>
     /// <returns>The first non-<see langword="null"/> value in the collection.</returns>
-    [return: NotNull]
+    [return: System.Diagnostics.CodeAnalysis.NotNull]
     public static T Or<T>( this IEnumerable<T?> Vals, [DisallowNull] T Fallback ) => Vals.FirstOrDefault(Vl => Vl is not null) is { } V ? V : Fallback;
 
     /// <summary>
@@ -1167,7 +1165,7 @@ public static class Extensions {
     /// <param name="Fallback">The fallback value if all else is <see langword="null"/>.</param>
     /// <param name="OtherVals">The other values to check.</param>
     /// <returns>The first non-<see langword="null"/> value in the collection.</returns>
-    [return: NotNull]
+    [return: System.Diagnostics.CodeAnalysis.NotNull]
     public static T Or<T>( this T? Val, [DisallowNull] T Fallback, params T?[] OtherVals ) => Val.With(OtherVals).Or(Fallback);
 
     /// <summary>

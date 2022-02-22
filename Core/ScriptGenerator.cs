@@ -22,7 +22,7 @@ namespace QGen.Core;
 /// </summary>
 public class ScriptGenerator {
 
-    public static async Task<Result> GenerateAsync( DirectoryInfo RootDirectory, IEnumerable<IFileGenerator> Generators, CancellationToken Token = new() ) {
+    public static async Task<Result> GenerateAsync( DirectoryInfo RootDirectory, IEnumerable<IFileGenerator> Generators, CancellationToken Token = new CancellationToken() ) {
         ParsedDirectory Dir = new ParsedDirectory(RootDirectory);
         foreach ( IFileGenerator Generator in Generators ) {
             if ( Token.IsCancellationRequested ) { return Result.Cancelled(true); }

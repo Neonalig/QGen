@@ -133,27 +133,27 @@ public partial class MainWindow {
         /// <inheritdoc />
         public override string DestinationPath => "InputHelperAG.cs";
 
-        static readonly IAsyncEnumerable<string> _TempLines = (new []{
-            "using System.Runtime.CompilerServices;",
-            "",
-            "$(OtherUsings)",
-            "",
-            "namespace QGen.Sample;",
-            "",
-            "[CompilerGenerated]",
-            "public static partial class InputHelper {",
-            "",
-            "    public static void ConstructInputs() {",
-            "        $(CtoInputs)",
-            "    }",
-            "",
-            "    public static void UpdateAll() {",
-            "        $(UpdInputs)",
-            "    }",
-            "",
-            "    $(InputFlds)",
-            "}"
-        }).AsAsync();
+        static readonly IAsyncEnumerable<string> _TempLines = new []{
+            @"using System.Runtime.CompilerServices;",
+            @"",
+            @"$(OtherUsings)",
+            @"",
+            @"namespace QGen.Sample;",
+            @"",
+            @"[CompilerGenerated]",
+            @"public static partial class InputHelper {",
+            @"",
+            @"    public static void ConstructInputs() {",
+            @"        $(CtoInputs)",
+            @"    }",
+            @"",
+            @"    public static void UpdateAll() {",
+            @"        $(UpdInputs)",
+            @"    }",
+            @"",
+            @"    $(InputFlds)",
+            @"}"
+        }.AsAsync();
 
         /// <inheritdoc />
         public override IAsyncEnumerable<string> TemplateLines => _TempLines;
@@ -197,113 +197,42 @@ public partial class MainWindow {
                 }
             }
 
+            StringBuilder
+                CtoInputsSB = new StringBuilder(),
+                UpdInputsSB = new StringBuilder(),
+                InputFldsSB   = new StringBuilder();
+            foreach ( (string Nm, string AssPth, string Tp) in EnumMembers ) {
+                _ = CtoInputsSB.Append("\r\n\t\tInput");
+                _ = CtoInputsSB.Append(Nm);
+                _ = CtoInputsSB.Append(" = new Input<");
+                _ = CtoInputsSB.Append(Tp);
+                _ = CtoInputsSB.Append(">(KnownInput.");
+                _ = CtoInputsSB.Append(Nm);
+                _ = CtoInputsSB.Append(", ");
+                _ = CtoInputsSB.Append(AssPth);
+                _ = CtoInputsSB.Append(", default);");
+
+                _ = UpdInputsSB.Append("\r\n\t\tUpdateInput(Input");
+                _ = UpdInputsSB.Append(Nm);
+                _ = UpdInputsSB.Append(");");
+
+                _ = InputFldsSB.Append("\r\n\tpublic static Input<");
+                _ = InputFldsSB.Append(Tp);
+                _ = InputFldsSB.Append("> Input");
+                _ = InputFldsSB.Append(Nm);
+                _ = InputFldsSB.Append(" { get; private set; } = null!;\r\n");
+            }
+            _ = CtoInputsSB.Remove(0, 4);
+            _ = UpdInputsSB.Remove(0, 4);
+            _ = InputFldsSB.Remove(0, 3);
+
             return new IMatchGenerator[] {
-                new InputHelper_OtherUsings().Init(Usings),
-                new InputHelper_CtoInputs().Init(EnumMembers),
-                new InputHelper_UpdInputs().Init(EnumMembers),
-                new InputHelper_InputFlds().Init(EnumMembers)
+                new MatchGenerator("OtherUsings", Usings.Join("\r\n")),
+                new MatchGenerator("CtoInputs", CtoInputsSB.ToString()),
+                new MatchGenerator("UpdInputs", UpdInputsSB.ToString()),
+                new MatchGenerator("InputFlds", InputFldsSB.ToString().TrimEnd(2))
             }.AsEnumerable().GetResult(true);
         }
-    }
-
-    /// <summary />
-    internal class InputHelper_OtherUsings : IMatchGenerator {
-        /// <summary />
-        internal InputHelper_OtherUsings Init( IEnumerable<string> Usings ) {
-            _Content = Usings.Join("\r\n");
-            return this;
-        }
-
-        /// <inheritdoc />
-        public string Name => "OtherUsings";
-
-        /// <summary />
-        Result<string> _Content = string.Empty;
-
-        /// <inheritdoc />
-        public Result<string> Generate( Match Match, string Line ) => _Content;
-    }
-
-    /// <summary />
-    internal class InputHelper_CtoInputs : IMatchGenerator {
-        /// <summary />
-        internal InputHelper_CtoInputs Init( IEnumerable<(string Name, string AssetPath, string Type)> Members ) {
-            StringBuilder SB = new StringBuilder();
-            foreach ( (string Nm, string AssPth, string Tp) in Members ) {
-                _ = SB.Append("\r\n\t\tInput");
-                _ = SB.Append(Nm);
-                _ = SB.Append(" = new Input<");
-                _ = SB.Append(Tp);
-                _ = SB.Append(">(KnownInput.");
-                _ = SB.Append(Nm);
-                _ = SB.Append(", ");
-                _ = SB.Append(AssPth);
-                _ = SB.Append(", default);");
-            }
-            _ = SB.Remove(0, 4);
-            _Content = SB.ToString();
-            return this;
-        }
-
-        Result<string> _Content = string.Empty;
-
-        /// <inheritdoc />
-        public string Name => "CtoInputs";
-
-        /// <inheritdoc />
-        public Result<string> Generate( Match Match, string Line ) => _Content;
-    }
-
-    /// <summary />
-    internal class InputHelper_UpdInputs : IMatchGenerator {
-
-        /// <summary />
-        internal InputHelper_UpdInputs Init( IEnumerable<(string Name, string AssetPath, string Type)> Members ) {
-            StringBuilder SB = new StringBuilder();
-            foreach ( (string Nm, _, _) in Members ) {
-                _ = SB.Append("\r\n\t\tUpdateInput(Input");
-                _ = SB.Append(Nm);
-                _ = SB.Append(");");
-            }
-            _ = SB.Remove(0, 4);
-            _Content = SB.ToString();
-            return this;
-        }
-
-        Result<string> _Content = string.Empty;
-
-        /// <inheritdoc />
-        public string Name => "UpdInputs";
-
-        /// <inheritdoc />
-        public Result<string> Generate( Match Match, string Line ) => _Content;
-    }
-
-    /// <summary />
-    internal class InputHelper_InputFlds : IMatchGenerator {
-
-        /// <summary />
-        internal InputHelper_InputFlds Init( IEnumerable<(string Name, string AssetPath, string Type)> Members ) {
-            StringBuilder SB = new StringBuilder();
-            foreach ( (string Nm, _, string Tp) in Members ) {
-                _ = SB.Append("\r\n\tpublic static Input<");
-                _ = SB.Append(Tp);
-                _ = SB.Append("> Input");
-                _ = SB.Append(Nm);
-                _ = SB.Append(" { get; private set; } = null!;\r\n");
-            }
-            _ = SB.Remove(0, 3);
-            _Content = SB.ToString().TrimEnd(2);
-            return this;
-        }
-
-        Result<string> _Content = string.Empty;
-
-        /// <inheritdoc />
-        public string Name => "InputFlds";
-
-        /// <inheritdoc />
-        public Result<string> Generate( Match Match, string Line ) => _Content;
     }
 
     #endregion
