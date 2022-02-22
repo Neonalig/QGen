@@ -11,6 +11,7 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 #endregion
 
@@ -54,6 +55,18 @@ public class LazyAsyncEnumerable<T> : IAsyncEnumerable<T>, IEnumerable<T> {
         _Values = Values;
         HasValues = true;
     }
+
+    /// <summary>
+    /// Initialises a new instance of the <see cref="LazyAsyncEnumerable{T}"/> class.
+    /// </summary>
+    /// <param name="EnumTask">The task which asynchronously constructs/retrieves the collection of values.</param>
+    public LazyAsyncEnumerable( Task<IEnumerable<T>> EnumTask ) : this(EnumTask.GetAsyncEnumerable()) { }
+
+    /// <summary>
+    /// Initialises a new instance of the <see cref="LazyAsyncEnumerable{T}"/> class.
+    /// </summary>
+    /// <param name="EnumTaskFunc">The task which asynchronously constructs/retrieves the collection of values.</param>
+    public LazyAsyncEnumerable( Func<Task<IEnumerable<T>>> EnumTaskFunc ) : this(EnumTaskFunc.Transform(Extensions.GetAsyncEnumerable)) { }
 
     /// <summary>
     /// Initialises a new instance of the <see cref="LazyAsyncEnumerable{T}"/> class.
@@ -153,4 +166,14 @@ public class LazyAsyncEnumerable<T> : IAsyncEnumerable<T>, IEnumerable<T> {
 
     /// <inheritdoc />
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    /// <summary>
+    /// Gets the awaiter.
+    /// </summary>
+    /// <param name="Token">The cancellation token.</param>
+    /// <returns>The task awaiter.</returns>
+    public TaskAwaiter<ReadOnlyCollection<T>> GetAwaiter( CancellationToken Token ) => GetValuesAsync(Token).GetAwaiter();
+
+    /// <inheritdoc cref="GetAwaiter(CancellationToken)"/>
+    public TaskAwaiter<ReadOnlyCollection<T>> GetAwaiter() => GetAwaiter(new CancellationToken());
 }

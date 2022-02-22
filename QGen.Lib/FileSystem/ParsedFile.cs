@@ -54,7 +54,7 @@ public class ParsedFile : FileSystemInfo {
     public ParsedFile( FileInfo Path, ParsedDirectory Parent ) {
         this.Path = Path;
         this.Parent = Parent;
-        Lines = new LazyAsync<string[]>(RequestLinesAsync);
+        Lines = new LazyAsyncEnumerable<string>(async () => await RequestLinesAsync());
         Text = new LazyAsync<string>(RequestTextAsync);
         SourceText = new LazyAsync<SourceText>(RequestSourceTextAsync);
         SyntaxTree = new LazyAsync<SyntaxTree>(RequestSyntaxTreeAsync);
@@ -86,7 +86,7 @@ public class ParsedFile : FileSystemInfo {
     /// The lines of text within the file.
     /// </summary>
     /// <seealso cref="Text"/>
-    public LazyAsync<string[]> Lines;
+    public LazyAsyncEnumerable<string> Lines;
     async Task<string[]> RequestLinesAsync( CancellationToken Token = default ) => await File.ReadAllLinesAsync(Path.FullName, Token);
 
     /// <summary>
@@ -94,7 +94,7 @@ public class ParsedFile : FileSystemInfo {
     /// </summary>
     /// <seealso cref="Lines"/>
     public LazyAsync<string> Text;
-    async Task<string> RequestTextAsync( CancellationToken Token = default ) => (await Lines.GetValueAsync(Token)).Join("\r\n");
+    async Task<string> RequestTextAsync( CancellationToken Token = default ) => (await Lines.GetValuesAsync(Token)).Join("\r\n");
 
     /// <summary>
     /// The parsed source text from the contents within the file.

@@ -27,15 +27,12 @@ public class ScriptGenerator {
         foreach ( IFileGenerator Generator in Generators ) {
             if ( Token.IsCancellationRequested ) { return Result.Cancelled(true); }
             switch ( Generator ) {
-                case IFileModifier Mod:
-                    if ( !Dir.TryGetFile(Mod.TemplatePath, out ParsedFile? TemplateFile) ) {
-                        return Result.FileNotFound(Mod.TemplatePath);
-                    }
+                case ITemplateModifier Mod:
                     if ( !Dir.TryGetFilePointer(Mod.DestinationPath, out ParsedFile? DestinationFile) ) {
                         return Result.FilePathInvalid(Mod.DestinationPath);
                     }
 
-                    if ( !(await Mod.LookupAsync(Dir, TemplateFile, DestinationFile, Token)).TryGetValue(out IEnumerable<IMatchGenerator>? MatchGens ) ) {
+                    if ( !(await Mod.LookupAsync(Dir, DestinationFile, Token)).TryGetValue(out (IEnumerable<string> Lines, IEnumerable<IMatchGenerator> MatchGens) Res ) ) {
                         return Result.LookupFailed(Mod);
                     }
 
@@ -44,7 +41,7 @@ public class ScriptGenerator {
                         foreach ( string HeaderLine in Mod.GetFileHeader() ) {
                             await SW.WriteLineAsync(HeaderLine);
                         }
-                        foreach ( string Line in SourceGenerator.Generate(await TemplateFile.Lines.GetValueAsync(Token), MatchGens) ) {
+                        foreach ( string Line in SourceGenerator.Generate(Res.Lines, Res.MatchGens) ) {
                             await SW.WriteLineAsync(Line);
                         }
                         await SW.FlushAsync();

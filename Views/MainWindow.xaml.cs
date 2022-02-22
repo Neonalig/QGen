@@ -31,8 +31,6 @@ public partial class MainWindow {
         InitializeComponent();
         DataContext = this;
 
-        //foreach ( )
-
         //Simple replacements for '%UserProfile%/Desktop/template.cs' to '%UserProfile%/Desktop/destfile.cs'
         //TestOne();
 
@@ -120,26 +118,48 @@ public partial class MainWindow {
         Res.Log();
     }
 
-    public class InputHelper_AG : IFileModifier {
-        /// <inheritdoc />
-        public string Name => "InputHelper-GenUtil";
+    public class InputHelper_AG : TemplateModifier {
+
+        #region IFileGenerator Implementation
 
         /// <inheritdoc />
-        public Version Version { get; } = new Version(0, 2, 0);
-
-        #region Implementation of IFileModifier
+        public override string Name => "InputHelper-GenUtil";
 
         /// <inheritdoc />
-        public string TemplatePath => "InputHelperAG.auto.cs";
+        public override Version Version { get; } = new Version(0, 2, 1);
+
+        #endregion
 
         /// <inheritdoc />
-        public string DestinationPath => "InputHelperAG.cs";
+        public override string DestinationPath => "InputHelperAG.cs";
+
+        static readonly IAsyncEnumerable<string> _TempLines = (new []{
+            "using System.Runtime.CompilerServices;",
+            "",
+            "$(OtherUsings)",
+            "",
+            "namespace QGen.Sample;",
+            "",
+            "[CompilerGenerated]",
+            "public static partial class InputHelper {",
+            "",
+            "    public static void ConstructInputs() {",
+            "        $(CtoInputs)",
+            "    }",
+            "",
+            "    public static void UpdateAll() {",
+            "        $(UpdInputs)",
+            "    }",
+            "",
+            "    $(InputFlds)",
+            "}"
+        }).AsAsync();
 
         /// <inheritdoc />
-        public async Task<Result<IEnumerable<IMatchGenerator>>> LookupAsync( ParsedDirectory RootDirectory, ParsedFile TemplateFile, ParsedFile DestinationFile, CancellationToken Token ) {
+        public override IAsyncEnumerable<string> TemplateLines => _TempLines;
 
-            Debug.WriteLine($"Reading from template file '{TemplateFile}'...");
-
+        /// <inheritdoc />
+        public override async Task<Result<IEnumerable<IMatchGenerator>>> LookupAsync( ParsedDirectory RootDirectory, ParsedFile DestinationFile, CancellationToken Token ) {
             ParsedFile EnumFile = RootDirectory["KnownInput.cs"];
 
             SyntaxNode TreeRoot = await EnumFile.RootNode;
@@ -184,8 +204,6 @@ public partial class MainWindow {
                 new InputHelper_InputFlds().Init(EnumMembers)
             }.AsEnumerable().GetResult(true);
         }
-
-        #endregion
     }
 
     /// <summary />

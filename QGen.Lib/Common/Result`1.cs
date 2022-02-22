@@ -8,6 +8,8 @@
 
 #endregion
 
+using System.Runtime.CompilerServices;
+
 namespace QGen.Lib.Common;
 
 public readonly struct Result<T> : IResult<T> {
@@ -134,5 +136,20 @@ public readonly struct Result<T> : IResult<T> {
     /// The default 'unexpected error' result.
     /// </summary>
     public static readonly Result<T> UnexpectedError = new Result<T>(false, Result.MsgError, default!);
+
+    /// <inheritdoc cref="Result.Cancelled()"/>
+    public static Result<T> Cancelled() => Result.Cancelled().ForceType<T>();
+
+    /// <inheritdoc cref="Result.Cancelled(bool, string)"/>
+    public static Result<T> Cancelled( bool Verbose, [CallerMemberName] string CallerMemberName = "" ) => Result.Cancelled(Verbose, CallerMemberName).ForceType<T>();
+
+    /// <inheritdoc cref="Result.FilePathInvalid(string)"/>
+    public static Result<T> FilePathInvalid( string Path ) => Result.FilePathInvalid(Path).ForceType<T>();
+
+    /// <inheritdoc cref="Result.FileNotFound(string)"/>
+    public static Result<T> FileNotFound( string Path ) => Result.FileNotFound(Path).ForceType<T>();
+
+    /// <inheritdoc cref="Result.LookupFailed(IFileGenerator)"/>
+    public static Result<T> LookupFailed( IFileGenerator Generator ) => Result.LookupFailed(Generator).ForceType<T>();
 
 }
