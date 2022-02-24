@@ -112,20 +112,20 @@ public partial class MainWindow {
                     //Debug.WriteLine("\t\t\t\t\tInvalid constructor.");
                     yield return new CachedProvider(Tp, Result<IGeneratorProvider>.MissingParameterlessConstructor());
                 }
-            } else {
-                //Debug.WriteLine("\t\t\t\tDoes not derive IGeneratorProvider!");
-            }
+            }/* else {
+                Debug.WriteLine("\t\t\t\tDoes not derive IGeneratorProvider!");
+            }*/
         }
     }
 
-    static async void TestTwo() {
-        try {
-            await TestTwoAsync();
-        } catch ( Exception Ex ) {
-            Debug.WriteLine($"Caught: {Ex}", "EXCEPTION");
-            throw;
-        }
-    }
+    //static async void TestTwo() {
+    //    try {
+    //        await TestTwoAsync();
+    //    } catch ( Exception Ex ) {
+    //        Debug.WriteLine($"Caught: {Ex}", "EXCEPTION");
+    //        throw;
+    //    }
+    //}
 
     #region TestOne
 
@@ -188,7 +188,7 @@ public partial class MainWindow {
 
     #region TestTwo
 
-    static async Task TestTwoAsync(CancellationToken Token = new() ) {//DirectoryInfo CurDir = new DirectoryInfo(Environment.CurrentDirectory);
+    static async Task TestTwoAsync(CancellationToken Token = new CancellationToken() ) {//DirectoryInfo CurDir = new DirectoryInfo(Environment.CurrentDirectory);
         DirectoryInfo CurDir = new DirectoryInfo(@"E:\Projects\Visual Studio\QGen\QGen.Sample\QGen.Sample.GeneratorSample\bin\Debug\net6.0");
 
         foreach ( (FileInfo Path, Result<Assembly> Assembly, Result<IEnumerable<CachedProvider>> Providers) in FindDynamicAssembliesAsync(CurDir, "QGen.Sample.GeneratorSample.dll") ) {
