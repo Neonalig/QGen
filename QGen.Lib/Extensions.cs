@@ -1177,4 +1177,106 @@ public static class Extensions {
     /// <returns>The first non-<see langword="null"/> string in the collection.</returns>
     public static string Or( this string? Val, string Fallback, params string?[] OtherVals ) => Val.With(OtherVals).Or(Fallback);
 
+    /// <summary>
+    /// Returns the input typed as <see cref="IEnumerable"/>.
+    /// </summary>
+    /// <param name="Enum">The enumerable collection to return.</param>
+    /// <returns>The input sequence typed as <see cref="IEnumerable"/>.</returns>
+    public static IEnumerable AsEnum( this IEnumerable Enum ) => Enum;
+
+    /// <inheritdoc cref="Enumerable.AsEnumerable{TSource}(IEnumerable{TSource})"/>
+    /// <typeparam name="T">The collection containing type.</typeparam>
+    /// <param name="Enum">The enumerable collection to return.</param>
+    public static IEnumerable<T> AsEnum<T>( this IEnumerable<T> Enum ) => Enum;
+
+    /// <inheritdoc cref="Task.FromResult{TResult}(TResult)"/>
+    /// <param name="Result">The result of the task.</param>
+    public static Task<T> AsTask<T>( this T Result ) => Task.FromResult(Result);
+
+    /// <summary>
+    /// Method responsible for resolving a root folder from a generator provider.
+    /// </summary>
+    /// <param name="RequestedRootFolder">The requested root folder.</param>
+    /// <returns>The result of the method execution.</returns>
+    public delegate Result<DirectoryInfo> ResolvePath( string RequestedRootFolder );
+
+    /// <summary>
+    /// Resolves the root folder from the given generator provider.
+    /// </summary>
+    /// <param name="Provider">The provider.</param>
+    /// <param name="Alt">The alternative method to invoke if the default root folder path cannot be resolved.</param>
+    /// <returns>The result of the method execution.</returns>
+    public static Result<DirectoryInfo> ResolveRootFolder( this IGeneratorProvider Provider, ResolvePath Alt ) {
+        if ( Provider.DefaultRootFolder is { } Path
+             && Path.GetDirectory(true).TryGetValue(out DirectoryInfo? RootFolder) ) {
+            return RootFolder;
+        }
+        return Alt(Provider.RequestedRootFolder);
+    }
+
+    /// <summary>
+    /// Gets the <see cref="DirectoryInfo"/> instance pointing to the designated path.
+    /// </summary>
+    /// <param name="Path">The path.</param>
+    /// <param name="MustExist">Whether the directory must actually exist to be returned. If valid, but not found, a <see cref="Result.DirectoryNotFound(string)"/> result will be returned instead.</param>
+    /// <returns>The result of the method execution.</returns>
+    public static Result<DirectoryInfo> GetDirectory( this string Path, bool MustExist = false ) => Result<DirectoryInfo>.TryCatch(() => ConstructDirectoryPointer(Path, MustExist));
+
+    static DirectoryInfo ConstructDirectoryPointer( string Path, bool MustExist ) {
+        DirectoryInfo File = new DirectoryInfo(Path);
+        if ( MustExist && !File.Exists ) {
+            return Result<DirectoryInfo>.DirectoryNotFound(Path);
+        }
+        return File;
+    }
+
+    /// <summary>
+    /// Gets the <see cref="FileInfo"/> instance pointing to the designated path.
+    /// </summary>
+    /// <param name="Path">The path.</param>
+    /// <param name="MustExist">Whether the file must actually exist to be returned. If valid, but not found, a <see cref="Result.FileNotFound(string)"/> result will be returned instead.</param>
+    /// <returns>The result of the method execution.</returns>
+    public static Result<FileInfo> GetFile( this string Path, bool MustExist = false ) => Result<FileInfo>.TryCatch(() => ConstructFilePointer(Path, MustExist));
+
+    static FileInfo ConstructFilePointer( string Path, bool MustExist ) {
+        FileInfo File = new FileInfo(Path);
+        if ( MustExist && !File.Exists ) {
+            return Result<FileInfo>.FileNotFound(Path);
+        }
+        return File;
+    }
+
+    /// <summary>
+    /// Determines and returns the first successful result.
+    /// </summary>
+    /// <typeparam name="T">The resultant value type.</typeparam>
+    /// <param name="A">The first result to check.</param>
+    /// <param name="B">The second result to check.</param>
+    /// <returns>The first successful result.</returns>
+    public static Result<T> Or<T>( this Result<T> A, Result<T> B ) => A.Success ? A : B;
+
+    /// <summary>
+    /// Determines and returns the first successful result in the collection.
+    /// </summary>
+    /// <typeparam name="T">The resultant value type.</typeparam>
+    /// <param name="Results">The collection of results to check.</param>
+    /// <returns>The first successful result in the collection.</returns>
+    public static Result<T> Or<T>( this IEnumerable<Result<T>> Results ) {
+        Result<T>? Last = null;
+        foreach ( Result<T> Result in Results ) {
+            Last = Result;
+            if ( Result.Success ) {
+                return Result;
+            }
+        }
+        if ( !Last.HasValue ) {
+            throw new ArgumentException("The collection of results was empty.", nameof(Results));
+        }
+        return Last.Value;
+    }
+
+    /// <inheritdoc cref="Or{T}(IEnumerable{Result{T}})"/>
+    /// <param name="A">The initial result to check.</param>
+    /// <param name="Others">The other results to check.</param>
+    public static Result<T> Or<T>( this Result<T> A, params Result<T>[] Others ) => Or(A.With(Others: Others));
 }

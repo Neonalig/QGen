@@ -17,6 +17,7 @@ namespace QGen.Lib;
 /// <summary>
 /// Defines a class which provides various <see cref="IFileGenerator"/> types based on a particular pre-chosen criteria. (i.e. active folder)
 /// </summary>
+/// <remarks>The deriving class <b>must</b> define a default, parameterless constructor.</remarks>
 public interface IGeneratorProvider {
 
     /// <summary>
@@ -25,5 +26,29 @@ public interface IGeneratorProvider {
     /// <param name="Token">The cancellation token.</param>
     /// <returns>The collection of generators to use.</returns>
     Task<Result<IEnumerable<IFileGenerator>>> GetGeneratorsAsync( CancellationToken Token = new CancellationToken() );
+
+    /// <summary>
+    /// Gets the requested root folder's relative path.
+    /// <para/><b>Example: </b>
+    /// <br/><example>
+    /// <c>SampleProject/Scripts/Helpers/</c>
+    /// </example>
+    /// </summary>
+    /// <value>
+    /// The relative path to the root folder.
+    /// </value>
+    string RequestedRootFolder { get; }
+
+    /// <summary>
+    /// Gets the root folder's absolute path as is default on most systems.
+    /// <para/><b>Example: </b>
+    /// <br/><example>
+    /// <c>%userprofile%/Documents/Unity/SampleProject/Scripts/Helpers/</c>
+    /// </example>
+    /// </summary>
+    /// <value>
+    /// The root folder's absolute path, or <see langword="null"/> if there is no general default.
+    /// </value>
+    string? DefaultRootFolder { get; }
 
 }

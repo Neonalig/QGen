@@ -65,7 +65,7 @@ internal class SourceGenerator {
 
                 Line.Split(M.Index, M.Length, out string? Prior, out string? Match, out string? Next);
                 if ( Prior is not null ) { yield return Prior; }
-                Debug.WriteLine($"\t'{Prior ?? "<null>"}';;'{Match ?? "<null>"}';;'{Next ?? "<null>"}'");
+                //Debug.WriteLine($"\t'{Prior ?? "<null>"}';;'{Match ?? "<null>"}';;'{Next ?? "<null>"}'");
 
                 if ( Generators.TryGetValue(MT, out IMatchGenerator? Generator) ) {
                     yield return Generator.Generate(M, Line);

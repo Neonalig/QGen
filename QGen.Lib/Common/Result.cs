@@ -75,6 +75,15 @@ public sealed class Result : IResult {
     public static implicit operator bool( Result Result ) => Result.Success;
 
     /// <summary>
+    /// Performs an <see langword="implicit"/> conversion from <see cref="Exception"/> to <see cref="Result"/>.
+    /// </summary>
+    /// <param name="Ex">The exception.</param>
+    /// <returns>
+    /// The result of the conversion.
+    /// </returns>
+    public static implicit operator Result( Exception Ex ) => new Result(false, $"[{Ex.HResult}] {Ex}");
+
+    /// <summary>
     /// Performs an explicit conversion from <see cref="Result"/> to <see cref="string"/>.
     /// </summary>
     /// <param name="Result">The result to convert.</param>
@@ -130,11 +139,38 @@ public sealed class Result : IResult {
     public static Result FileNotFound( string Path ) => new Result(false, $"The file with the path '{Path}' could not be found.");
 
     /// <summary>
+    /// An unsuccessful result related to a directory path being invalid.
+    /// </summary>
+    /// <param name="Path">The requested path to the directory.</param>
+    /// <returns>A new <see cref="Result"/> instance.</returns>
+    public static Result DirectoryPathInvalid( string Path ) => new Result(false, $"The directory path '{Path}' was invalid and could not be resolved.");
+
+    /// <summary>
+    /// An unsuccessful result related to a directory path not being found.
+    /// </summary>
+    /// <param name="Path">The requested path to the directory.</param>
+    /// <returns>A new <see cref="Result"/> instance.</returns>
+    public static Result DirectoryNotFound( string Path ) => new Result(false, $"The directory with the path '{Path}' could not be found.");
+
+    /// <summary>
     /// An unsuccessful result related to a <see cref="IFileGenerator"/> lookup failing.
     /// </summary>
     /// <param name="Generator">The source generator that failed.</param>
     /// <returns>A new <see cref="Result"/> instance.</returns>
     public static Result LookupFailed( IFileGenerator Generator ) => new Result(false, $"Attempted file lookup on the source generator '{Generator.Name}' (v{Generator.Version}) failed.");
+
+    /// <summary>
+    /// An unsuccessful result related to a <see cref="Type"/> not containing a default, parameterless constructor.
+    /// </summary>
+    /// <param name="Tp">The type that does not provide a default, parameterless constructor.</param>
+    /// <returns>A new <see cref="Result"/> instance.</returns>
+    public static Result MissingParameterlessConstructor( Type Tp ) => new Result(false, $"The type '{Tp.FullName}' derives from type {nameof(IGeneratorProvider)}, but does not define a default, parameterless constructor.");
+
+    /// <summary>
+    /// An unsuccessful result related to a dialog being closed prematurely by the user.
+    /// </summary>
+    /// <returns>A new <see cref="Result"/> instance.</returns>
+    public static readonly Result UserCancelledDialog = new Result(false, "The user cancelled the dialog.");
 
     /// <summary>
     /// Logs the current result to the debug trace listeners.

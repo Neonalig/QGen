@@ -11,14 +11,18 @@ namespace QGen.Sample.Generator;
 
 public class Generator : IGeneratorProvider {
 
+    readonly IFileGenerator[] _Generators = { new InputHelper_AG() };
+
     #region IGeneratorProvider Implementation
 
-    IFileGenerator[] _Generators;
+    /// <inheritdoc />
+    public Task<Result<IEnumerable<IFileGenerator>>> GetGeneratorsAsync( CancellationToken Token = new CancellationToken() ) => _Generators.AsEnum().GetResult(true).AsTask();
 
     /// <inheritdoc />
-    public async Task<Result<IEnumerable<IFileGenerator>>> GetGeneratorsAsync( CancellationToken Token = new CancellationToken() ) {
+    public string RequestedRootFolder => @"QGen\QGen.Sample\QGen.Sample.GenerationSample";
 
-    }
+    /// <inheritdoc />
+    public string DefaultRootFolder => @"E:\Projects\Visual Studio\QGen\QGen.Sample\QGen.Sample.GenerationSample";
 
     #endregion
 }
@@ -31,7 +35,7 @@ public class InputHelper_AG : TemplateModifier {
     public override string Name => "InputHelper-GenUtil";
 
     /// <inheritdoc />
-    public override Version Version { get; } = new Version(0, 2, 1);
+    public override Version Version { get; } = new Version(0, 3, 0);
 
     #endregion
 
@@ -74,7 +78,7 @@ public class InputHelper_AG : TemplateModifier {
 
         (SyntaxToken NameToken, SyntaxToken? AssetPathToken, SyntaxToken? TypeToken)? KIMatch = null;
         foreach ( SyntaxNode KINode in TreeRoot.IterateAllNodes() ) {
-            Debug.WriteLine($"\tNode: {KINode}.");
+            //Debug.WriteLine($"\tNode: {KINode}.");
             if ( !Ready ) {
                 if ( KINode.IsKind(SyntaxKind.UsingDirective) ) {
                     Usings.Add(KINode.ToString());
@@ -102,47 +106,127 @@ public class InputHelper_AG : TemplateModifier {
             }
         }
 
-        StringBuilder
-            CtoInputsSB = new StringBuilder(),
-                UpdInputsSB = new StringBuilder(),
-                InputFldsSB   = new StringBuilder();
-        foreach ( (string Nm, string AssPth, string Tp) in EnumMembers ) {
-            _ = CtoInputsSB.Append("\r\n\t\tInput");
-            _ = CtoInputsSB.Append(Nm);
-            _ = CtoInputsSB.Append(" = new Input<");
-            _ = CtoInputsSB.Append(Tp);
-            _ = CtoInputsSB.Append(">(KnownInput.");
-            _ = CtoInputsSB.Append(Nm);
-            _ = CtoInputsSB.Append(", ");
-            _ = CtoInputsSB.Append(AssPth);
-            _ = CtoInputsSB.Append(", default);");
+        IDynamicMatchGenerator[] DynGens = {
+            new OtherUsings_MatchGenerator(),
+            new CtoInputs_MatchGenerator(),
+            new UpdInputs_MatchGenerator(),
+            new InputFlds_MatchGenerator()
+        };
 
-            _ = UpdInputsSB.Append("\r\n\t\tUpdateInput(Input");
-            _ = UpdInputsSB.Append(Nm);
-            _ = UpdInputsSB.Append(");");
-
-            _ = InputFldsSB.Append("\r\n\tpublic static Input<");
-            _ = InputFldsSB.Append(Tp);
-            _ = InputFldsSB.Append("> Input");
-            _ = InputFldsSB.Append(Nm);
-            _ = InputFldsSB.Append(" { get; private set; } = null!;\r\n");
+        foreach ( IDynamicMatchGenerator DynGen in DynGens ) {
+            DynGen.AppendLines(Usings);
         }
-        _ = CtoInputsSB.Remove(0, 4);
-        _ = UpdInputsSB.Remove(0, 4);
-        _ = InputFldsSB.Remove(0, 3);
 
-        return new IMatchGenerator[] {
-                new MatchGenerator("OtherUsings", Usings.Join("\r\n")),
-                new MatchGenerator("CtoInputs", CtoInputsSB.ToString()),
-                new MatchGenerator("UpdInputs", UpdInputsSB.ToString()),
-                new MatchGenerator("InputFlds", InputFldsSB.ToString().TrimEnd(2))
-            }.AsEnumerable().GetResult(true);
+        foreach ( (string Nm, string AssPth, string Tp) in EnumMembers ) {
+            foreach ( IDynamicMatchGenerator DynGen in DynGens ) {
+                DynGen.AppendLines(Nm, AssPth, Tp);
+            }
+        }
+
+        return DynGens.Select(MG => MG.Finalise()).AsEnum().GetResult(true);
+    }
+
+    /// <summary>
+    /// <see cref="DynamicMatchGenerator"/> for the <c>$(OtherUsings)</c> variable.
+    /// </summary>
+    /// <seealso cref="DynamicMatchGenerator" />
+    internal sealed class OtherUsings_MatchGenerator : DynamicMatchGenerator {
+
+        /// <inheritdoc />
+        public override string GeneratorName => "OtherUsings";
+
+        /// <inheritdoc />
+        internal override void AppendLines( StringBuilder SB, string Name, string AssetPath, string Type ) { }
+
+        /// <inheritdoc />
+        internal override void AppendLines( StringBuilder SB, IEnumerable<string> Usings ) => SB.Append(Usings.Join("\r\n"));
+
+        /// <inheritdoc />
+        internal override string Finalise( StringBuilder SB ) => SB.ToString();
+
+    }
+
+    /// <summary>
+    /// <see cref="DynamicMatchGenerator"/> for the <c>$(CtoInputs)</c> variable.
+    /// </summary>
+    /// <seealso cref="DynamicMatchGenerator" />
+    internal sealed class CtoInputs_MatchGenerator : DynamicMatchGenerator {
+
+        /// <inheritdoc />
+        public override string GeneratorName => "CtoInputs";
+
+        /// <inheritdoc />
+        internal override void AppendLines( StringBuilder SB, string Name, string AssetPath, string Type ) =>
+            SB.Append("\r\n\t\tInput")
+                .Append(Name)
+                .Append(" = new Input<")
+                .Append(Type)
+                .Append(">(KnownInput.")
+                .Append(Name)
+                .Append(", ")
+                .Append(AssetPath)
+                .Append(", default);");
+
+        /// <inheritdoc />
+        internal override void AppendLines( StringBuilder SB, IEnumerable<string> Usings ) { }
+
+        /// <inheritdoc />
+        internal override string Finalise( StringBuilder SB ) => SB.Remove(0, 4).ToString();
+
+    }
+
+    /// <summary>
+    /// <see cref="DynamicMatchGenerator"/> for the <c>$(UpdInputs)</c> variable.
+    /// </summary>
+    /// <seealso cref="DynamicMatchGenerator" />
+    internal sealed class UpdInputs_MatchGenerator : DynamicMatchGenerator {
+
+        /// <inheritdoc />
+        public override string GeneratorName => "UpdInputs";
+
+        /// <inheritdoc />
+        internal override void AppendLines( StringBuilder SB, string Name, string AssetPath, string Type ) =>
+            SB.Append("\r\n\t\tUpdateInput(Input")
+                .Append(Name)
+                .Append(");");
+
+        /// <inheritdoc />
+        internal override void AppendLines( StringBuilder SB, IEnumerable<string> Usings ) { }
+
+        /// <inheritdoc />
+        internal override string Finalise( StringBuilder SB ) => SB.Remove(0, 4).ToString();
+
+    }
+
+    /// <summary>
+    /// <see cref="DynamicMatchGenerator"/> for the <c>$(InputFlds)</c> variable.
+    /// </summary>
+    /// <seealso cref="DynamicMatchGenerator" />
+    internal sealed class InputFlds_MatchGenerator : DynamicMatchGenerator {
+
+        /// <inheritdoc />
+        public override string GeneratorName => "InputFlds";
+
+        /// <inheritdoc />
+        internal override void AppendLines( StringBuilder SB, string Name, string AssetPath, string Type ) =>
+            SB.Append("\r\n\tpublic static Input<")
+                .Append(Type)
+                .Append("> Input")
+                .Append(Name)
+                .Append(" { get; private set; } = null!;\r\n");
+        
+        /// <inheritdoc />
+        internal override void AppendLines( StringBuilder SB, IEnumerable<string> Usings ) { }
+
+        /// <inheritdoc />
+        internal override string Finalise( StringBuilder SB ) => SB.Remove(0, 3).ToString();
+
     }
 
     /// <summary>
     /// A dynamic match generator definition.
     /// </summary>
-    internal interface ISynBasedMatchGenerator {
+    internal interface IDynamicMatchGenerator {
 
         /// <summary>
         /// Appends the lines to the internal string builder.
@@ -153,45 +237,20 @@ public class InputHelper_AG : TemplateModifier {
         void AppendLines( string Name, string AssetPath, string Type );
 
         /// <summary>
-        /// Finalises the string generated in the internal string builder.
+        /// Appends the using statements to the internal string builder.
         /// </summary>
-        void Finalise();
+        /// <param name="Usings">The using statements.</param>
+        void AppendLines( IEnumerable<string> Usings );
 
         /// <summary>
-        /// Gets the match text generated via the internal string builder and specified enum members.
+        /// Finalises the string generated in the internal string builder, constructing the respective match generator.
         /// </summary>
-        /// <value>
-        /// The generated match text.
-        /// </value>
-        string MatchText { get; }
+        IMatchGenerator Finalise();
 
-        /// <summary>
-        /// Gets the name of the generator.
-        /// </summary>
-        /// <value>
-        /// The name of the generator.
-        /// </value>
-        string GeneratorName { get; }
-
-        /// <summary>
-        /// Gets the match generator.
-        /// </summary>
-        /// <value>
-        /// The match generator.
-        /// </value>
-        IMatchGenerator? Generator { get; set; }
-
-        /// <summary>
-        /// Gets the match generator.
-        /// </summary>
-        /// <remarks>Ensure the method is only invoked <b>after</b> <see cref="AppendLines(string, string, string)"/> has been invoked.</remarks>
-        /// <param name="SynBasedGen">The dynamic match generator definition.</param>
-        /// <returns>The match generator.</returns>
-        static IMatchGenerator GetMatchGenerator( ISynBasedMatchGenerator SynBasedGen ) => SynBasedGen.Generator ??= new MatchGenerator(SynBasedGen.GeneratorName, SynBasedGen.MatchText);
     }
 
-    /// <inheritdoc cref="ISynBasedMatchGenerator"/>
-    internal abstract class SynBasedMatchGenerator : ISynBasedMatchGenerator {
+    /// <inheritdoc cref="IDynamicMatchGenerator"/>
+    internal abstract class DynamicMatchGenerator : IDynamicMatchGenerator {
         readonly StringBuilder _SB = new StringBuilder();
 
         /// <inheritdoc cref="AppendLines(string, string, string)"/>
@@ -201,7 +260,22 @@ public class InputHelper_AG : TemplateModifier {
         /// <param name="Type"><inheritdoc cref="AppendLines(string, string, string)"/></param>
         internal abstract void AppendLines( StringBuilder SB, string Name, string AssetPath, string Type );
 
+        /// <summary>
+        /// Appends the using statements to the internal string buffer.
+        /// </summary>
+        /// <param name="SB">The string builder to append the lines to.</param>
+        /// <param name="Usings">The using statements.</param>
+        /// <seealso cref="AppendLines(string, string, string)"/>
+        internal abstract void AppendLines( StringBuilder SB, IEnumerable<string> Usings );
+
+        /// <summary>
+        /// Finalises the internal string builder's resultant string, caching the result.
+        /// </summary>
+        /// <param name="SB">The string builder.</param>
+        /// <returns>The final replacement string.</returns>
         internal abstract string Finalise(StringBuilder SB);
+
+        IMatchGenerator? _Generator = null;
 
         #region ISynBasedMatchGenerator Implementation
 
@@ -209,16 +283,18 @@ public class InputHelper_AG : TemplateModifier {
         public void AppendLines( string Name, string AssetPath, string Type ) => AppendLines(_SB, Name, AssetPath, Type);
 
         /// <inheritdoc />
-        public void Finalise() => MatchText = Finalise(_SB);
+        public void AppendLines( IEnumerable<string> Usings ) => AppendLines(_SB, Usings);
 
         /// <inheritdoc />
-        public string MatchText { get; private set; } = string.Empty;
+        public IMatchGenerator Finalise() => _Generator ??= new MatchGenerator(GeneratorName, Finalise(_SB));
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Gets the name of the generator.
+        /// </summary>
+        /// <value>
+        /// The name of the generator.
+        /// </value>
         public abstract string GeneratorName { get; }
-
-        /// <inheritdoc />
-        public IMatchGenerator? Generator { get; set; }
 
         #endregion
     }

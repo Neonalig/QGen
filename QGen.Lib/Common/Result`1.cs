@@ -59,6 +59,15 @@ public readonly struct Result<T> : IResult<T> {
     public static implicit operator bool( Result<T> Result ) => Result.Success;
 
     /// <summary>
+    /// Performs an <see langword="implicit"/> conversion from <see cref="Exception"/> to <see cref="Result{T}"/>.
+    /// </summary>
+    /// <param name="Ex">The exception.</param>
+    /// <returns>
+    /// The result of the conversion.
+    /// </returns>
+    public static implicit operator Result<T>( Exception Ex ) => From(Ex);
+
+    /// <summary>
     /// Performs an <see langword="implicit"/> conversion from <see cref="Result"/> to <typeparamref name="T"/>.
     /// </summary>
     /// <param name="Result">The result to convert.</param>
@@ -101,6 +110,13 @@ public readonly struct Result<T> : IResult<T> {
 
     /// <inheritdoc cref="From(T, bool, string)"/>
     public static Result<T> From( T Value, bool Success ) => From(Value, Success, Success ? Result.MsgSuccess : Result.MsgError);
+
+    /// <summary>
+    /// Constructs a new unsuccessful result from the specified exception message.
+    /// </summary>
+    /// <param name="Ex">The exception.</param>
+    /// <returns>A new unsuccessful result with the specified exception message.</returns>
+    public static Result<T> From( Exception Ex ) => new Result<T>(false, $"[{Ex.HResult}] {Ex}", default!);
 
     /// <summary>
     /// Constructs a new result from the given value.
@@ -151,7 +167,35 @@ public readonly struct Result<T> : IResult<T> {
     /// <inheritdoc cref="Result.FileNotFound(string)"/>
     public static Result<T> FileNotFound( string Path ) => Result.FileNotFound(Path).ForceType<T>();
 
+    /// <inheritdoc cref="Result.DirectoryPathInvalid(string)"/>
+    public static Result<T> DirectoryPathInvalid( string Path ) => Result.DirectoryPathInvalid(Path).ForceType<T>();
+
+    /// <inheritdoc cref="Result.DirectoryNotFound(string)"/>
+    public static Result<T> DirectoryNotFound( string Path ) => Result.DirectoryNotFound(Path).ForceType<T>();
+
     /// <inheritdoc cref="Result.LookupFailed(IFileGenerator)"/>
     public static Result<T> LookupFailed( IFileGenerator Generator ) => Result.LookupFailed(Generator).ForceType<T>();
+
+    /// <inheritdoc cref="Result.MissingParameterlessConstructor(Type)"/>
+    public static Result<T> MissingParameterlessConstructor() => new Result<T>(false, $"The type '{typeof(T).FullName}' derives from type {nameof(IGeneratorProvider)}, but does not define a default, parameterless constructor.", default!);
+
+    /// <inheritdoc cref="Result.MissingParameterlessConstructor(Type)"/>
+    public static Result<T> MissingParameterlessConstructor(Type Tp) => Result.MissingParameterlessConstructor(Tp).ForceType<T>();
+
+    /// <inheritdoc cref="Result.UserCancelledDialog"/>
+    public static readonly Result<T> UserCancelledDialog = Result.UserCancelledDialog.ForceType<T>();
+
+    /// <summary>
+    /// Attempts to construct the result using the specified function, returning an unsuccessful result if an exception is thrown.
+    /// </summary>
+    /// <param name="Cto">The constructor method.</param>
+    /// <returns>The result of the function.</returns>
+    public static Result<T> TryCatch( Func<T> Cto ) {
+        try {
+            return Cto.Invoke();
+        } catch (Exception Ex ) {
+            return Ex;
+        }
+    }
 
 }
