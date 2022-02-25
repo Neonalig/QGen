@@ -8,16 +8,34 @@
 
 #region Using Directives
 
+using System.IO;
 using System.Text.RegularExpressions;
+
+using QGen.Lib.Common;
+using QGen.Lib.FileSystem;
 
 #endregion
 
 namespace QGen.Core;
 
 /// <summary>
-/// The source generator class.
+/// Handles source generation on a per-file basis.
 /// </summary>
-internal class SourceGenerator {
+/// <remarks>
+/// <list type="bullet">
+///     <item>
+///         <term> File Generation </term>
+///         <description> <see cref="Generate(IEnumerable{string}, IEnumerable{IMatchGenerator})"/> </description>
+///     </item>
+///     <item>
+///         <term> Project Generation </term>
+///         <description> <see cref="ProjectGenerator"/> </description>
+///     </item>
+/// </list>
+/// </remarks>
+/// <seealso cref="ProjectGenerator"/>
+/// <seealso cref="IMatchGenerator"/>
+internal class FileGenerator {
 
     /// <summary>
     /// The pre-compiled <see cref="Regex"/> instance used to find $(...) regions for automatic generation.
@@ -84,6 +102,28 @@ internal class SourceGenerator {
             //Debug.WriteLine($"No matches found in {Line}.");
             yield return Line;
         }
+    }
+
+    /// <summary>
+    /// Asynchronously generates the file with the given header and body content.
+    /// </summary>
+    /// <param name="DestinationFile">The destination file.</param>
+    /// <param name="HeaderLines">The lines of text in the header.</param>
+    /// <param name="BodyLines">The lines of text in the body.</param>
+    /// <returns>The result of the method execution.</returns>
+    public static async Task<Result> GenerateFileAsync( ParsedFile DestinationFile, IEnumerable<string> HeaderLines, IEnumerable<string> BodyLines) {
+        if ( DestinationFile.Exists ) { DestinationFile.Delete(); }
+        await using ( StreamWriter SW = File.CreateText(DestinationFile.FullName) ) {
+            foreach ( string HeaderLine in HeaderLines ) {
+                await SW.WriteLineAsync(HeaderLine);
+            }
+            foreach ( string Line in BodyLines ) {
+                await SW.WriteLineAsync(Line);
+            }
+            await SW.FlushAsync();
+        }
+
+        return Result.Successful;
     }
 
 }

@@ -18,7 +18,7 @@ public sealed class Result : IResult {
 
 #if DEBUG
     /// <inheritdoc />
-    public object? Val => null;
+    public object? DbgVal => null;
 #endif
 
     /// <summary>

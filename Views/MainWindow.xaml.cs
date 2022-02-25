@@ -15,8 +15,6 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 
-using Ookii.Dialogs.Wpf;
-
 using QGen.Core;
 using QGen.Lib.Common;
 
@@ -38,19 +36,6 @@ public partial class MainWindow {
 
         //Close();
         //Environment.Exit(0);
-    }
-
-    public static Result<DirectoryInfo> ResolvePath( string RequestedRootFolder ) {
-        VistaFolderBrowserDialog VFBD = new VistaFolderBrowserDialog {
-            Description = $"Select the '{RequestedRootFolder}' path.",
-            Multiselect = false,
-            ShowNewFolderButton = false,
-            UseDescriptionForTitle = true
-        };
-
-        return VFBD.ShowDialog() == true
-            ? VFBD.SelectedPath.GetDirectory(true)
-            : Result<DirectoryInfo>.UserCancelledDialog;
     }
 
     /// <summary>
@@ -172,7 +157,7 @@ public partial class MainWindow {
         IMatchGenerator[] Gens = { new ExCond(), new ExMethods() };
 
         string[] Lines = File.ReadAllLines(TestFile.FullName);
-        string[] NewLines = SourceGenerator.Generate(Lines, Gens).ToArray();
+        string[] NewLines = FileGenerator.Generate(Lines, Gens).ToArray();
 
         if ( DestFile.Exists ) {
             DestFile.Delete();
@@ -188,46 +173,36 @@ public partial class MainWindow {
 
     #region TestTwo
 
-    static async Task TestTwoAsync(CancellationToken Token = new CancellationToken() ) {//DirectoryInfo CurDir = new DirectoryInfo(Environment.CurrentDirectory);
+    static async Task<Result> TestTwoAsync(CancellationToken Token = new CancellationToken() ) {//DirectoryInfo CurDir = new DirectoryInfo(Environment.CurrentDirectory);
         DirectoryInfo CurDir = new DirectoryInfo(@"E:\Projects\Visual Studio\QGen\QGen.Sample\QGen.Sample.GeneratorSample\bin\Debug\net6.0");
 
-        foreach ( (FileInfo Path, Result<Assembly> Assembly, Result<IEnumerable<CachedProvider>> Providers) in FindDynamicAssembliesAsync(CurDir, "QGen.Sample.GeneratorSample.dll") ) {
-            if ( Assembly.Success ) {
-                Debug.WriteLine($"Found assembly: '{Assembly.Value}' @ '{Path.Name}'");
-                if ( Providers.Success ) {
-                    foreach ( (Type ClassType, Result<IGeneratorProvider> Provider) in Providers.Value ) {
+        foreach ( (FileInfo Path, Result<Assembly> AssemRes, Result<IEnumerable<CachedProvider>> ProvsRes) in FindDynamicAssembliesAsync(CurDir, "QGen.Sample.GeneratorSample.dll") ) {
+            if ( AssemRes.TryGetValue(out Assembly? Assembly) ) {
+                Debug.WriteLine($"Found assembly: '{Assembly}' @ '{Path.Name}'");
+                if ( ProvsRes.TryGetValue(out IEnumerable<CachedProvider>? Providers) ) {
+                    foreach ( (Type ClassType, Result<IGeneratorProvider> ProvRes) in Providers ) {
                         // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
-                        if ( Provider.Success ) {
-                            Debug.WriteLine($"\t\t>> Successfully constructed the provider: '{Provider.Value.GetType().FullName}' ({Provider.Value}).");
-
-                            Result<DirectoryInfo> Dir = Provider.Value.ResolveRootFolder(ResolvePath);
-                            if ( Dir.Success ) {
-
-                                Result<IEnumerable<IFileGenerator>> Generators = await Provider.Value.GetGeneratorsAsync(Token);
-                                if ( Generators.Success ) {
-                                    Result GenRes = await ScriptGenerator.GenerateAsync(Dir.Value, Generators.Value, Token);
-                                    if ( GenRes.Success ) {
-                                        Debug.WriteLine("\t\t\t\t\tSource generators ran successfully!");
-                                    } else {
-                                        Debug.WriteLine($"\t\t\t\t\tSource generation failed with the result: '{Generators.Message}'.");
-                                    }
-                                } else {
-                                    Debug.WriteLine($"\t\t\t\tSource generator retrieval failed with the result: '{Generators.Message}'.");
-                                }
-                            } else {
-                                Debug.WriteLine($"\t\t\tRoot folder resolution failed with the result: '{Dir.Message}'.");
+                        if ( ProvRes.TryGetValue(out IGeneratorProvider? Provider) ) {
+                            Result GenRes = await ProjectGenerator.GenerateAsync(Provider, Token);
+                            if ( !GenRes.Success ) {
+                                return GenRes;
                             }
                         } else {
-                            Debug.WriteLine($"\t\tParsing of type {ClassType.FullName} failed with the result: '{Provider.Message}'.");
+                            Debug.WriteLine($"\t\tParsing of type {ClassType.FullName} failed with the result: '{ProvRes.Message}'.");
+                            return ProvRes;
                         }
                     }
                 } else {
-                    Debug.WriteLine($"\tProvider search failed with the result: '{Providers.Message}'.");
+                    Debug.WriteLine($"\tProvider search failed with the result: '{ProvsRes.Message}'.");
+                    return ProvsRes;
                 }
             } else {
-                Debug.WriteLine($"Assembly '{Path.Name}' failed to load with the result: '{Assembly.Message}'.");
+                Debug.WriteLine($"Assembly '{Path.Name}' failed to load with the result: '{AssemRes.Message}'.");
+                return AssemRes;
             }
         }
+
+        return Result.Successful;
     }
 
     #endregion
@@ -238,7 +213,8 @@ public partial class MainWindow {
         if ( _Running ) { return; }
         _Running = true;
         Btn.IsEnabled = false;
-        await TestTwoAsync();
+        Result Res = await TestTwoAsync();
+        Debug.WriteLine($"Test#2 method execution finished {(Res.Success ? "successfully" : "unsuccessfully")} with the result: '{Res.Message}'.");
         Btn.IsEnabled = true;
         _Running = false;
     }

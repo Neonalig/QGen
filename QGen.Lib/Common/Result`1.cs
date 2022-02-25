@@ -18,7 +18,7 @@ public readonly struct Result<T> : IResult<T> {
 
 #if DEBUG
     /// <inheritdoc />
-    public object? Val => Value;
+    public object? DbgVal => Value;
 #endif
 
     /// <summary>
@@ -39,7 +39,7 @@ public readonly struct Result<T> : IResult<T> {
     /// <param name="Value">The resultant value of the method execution. The execution result is assumed unsuccessful if the supplied value is <see langword="null"/>.</param>
     public Result( T? Value ) : this(Value is not null, Value is not null ? Result.MsgSuccess : Result.MsgError, Value!) { }
 
-    #region Implementation of IResult
+    #region IResult Implementation
 
     /// <inheritdoc />
     public bool Success { get; }

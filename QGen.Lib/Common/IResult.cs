@@ -15,7 +15,7 @@ public interface IResult {
 #if DEBUG    
     /// <inheritdoc cref="IResult{T}.Value"/>
     /// <remarks>Used exclusively for <see cref="Extensions.Log(IResult)"/> in DEBUG builds.</remarks>
-    object? Val { get; }
+    object? DbgVal { get; }
 #endif
 
     /// <summary>

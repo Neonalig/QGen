@@ -900,7 +900,7 @@ public static class Extensions {
     [Conditional("DEBUG")]
     public static void Log( this IResult Result ) {
 #if DEBUG
-        Debug.WriteLine(Result.Val switch {
+        Debug.WriteLine(Result.DbgVal switch {
             { } V => $"The method executed with the message: \"{Result.Message}\". (Value: '{V}')",
             _     => $"The method executed with the message: \"{Result.Message}\"."
         }, Result.Success ? "SUCCESS" : "ERROR");
