@@ -1279,4 +1279,12 @@ public static class Extensions {
     /// <param name="A">The initial result to check.</param>
     /// <param name="Others">The other results to check.</param>
     public static Result<T> Or<T>( this Result<T> A, params Result<T>[] Others ) => Or(A.With(Others: Others));
+
+    /// <summary>
+    /// Retrieves the specified value.
+    /// </summary>
+    /// <typeparam name="T">The value type.</typeparam>
+    /// <param name="Value">The value.</param>
+    /// <returns>A function which returns the specified value. Useful for avoiding delegate allocation.</returns>
+    public static T Retrieve<T>( this T Value ) => Value;
 }

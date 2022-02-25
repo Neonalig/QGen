@@ -1,0 +1,23 @@
+﻿<UserControl
+    x:Class="QGen.UserControls.DebugStopwatch"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:uC="clr-namespace:QGen.UserControls"
+    xmlns:ui="http://schemas.modernwpf.com/2019"
+    d:DataContext="{d:DesignInstance uC:DebugStopwatch}"
+    d:DesignHeight="40"
+    d:DesignWidth="100"
+    ui:ThemeManager.RequestedTheme="Dark"
+    FontFamily="{StaticResource AtkinsonHyperlegible}"
+    Foreground="{DynamicResource SystemControlPageTextBaseHighBrush}"
+    mc:Ignorable="d">
+    <Border Background="{DynamicResource SystemControlPageBackgroundAltHighBrush}" CornerRadius="8">
+        <TextBlock
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            d:Text="00:00.000"
+            Text="{Binding CurrentTime, Mode=OneWay}" />
+    </Border>
+</UserControl>
