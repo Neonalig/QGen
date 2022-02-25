@@ -2,6 +2,7 @@
     x:Class="QGen.UserControls.DebugStopwatch"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="clr-namespace:QGen.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:uC="clr-namespace:QGen.UserControls"
@@ -12,12 +13,26 @@
     ui:ThemeManager.RequestedTheme="Dark"
     FontFamily="{StaticResource AtkinsonHyperlegible}"
     Foreground="{DynamicResource SystemControlPageTextBaseHighBrush}"
+    PreviewKeyDown="UserControl_PreviewKeyDown"
+    PreviewKeyUp="UserControl_PreviewKeyUp"
     mc:Ignorable="d">
-    <Border Background="{DynamicResource SystemControlPageBackgroundAltHighBrush}" CornerRadius="8">
+    <UserControl.Resources>
+        <converters:BoolToDoubleConverter
+            x:Key="BoolToDblConv"
+            False="0.4"
+            True="1.0" />
+    </UserControl.Resources>
+    <Button
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch"
+        Click="UserButton_OnClick">
         <TextBlock
+            x:Name="TB"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
             d:Text="00:00.000"
+            Opacity="{Binding IsRunning, Mode=OneWay, Converter={StaticResource BoolToDblConv}}"
             Text="{Binding CurrentTime, Mode=OneWay}" />
-    </Border>
+    </Button>
+    <!--  Background="{DynamicResource SystemControlPageBackgroundAltHighBrush}"  -->
 </UserControl>

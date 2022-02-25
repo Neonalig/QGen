@@ -5,6 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.modernwpf.com/2019"
+    xmlns:userControls="clr-namespace:QGen.UserControls"
     xmlns:views="clr-namespace:QGen.Views"
     Title="QGen"
     Width="800"
@@ -34,12 +35,18 @@
                 Opacity="0.5"
                 Text="Automated source generation for the layman." />
         </StackPanel>
-        <Button
+        <StackPanel
             Grid.Row="1"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
-            Click="Button_Click"
-            Content="Run!"
-            FontSize="30" />
+            Orientation="Vertical">
+            <Button
+                HorizontalAlignment="Center"
+                Click="Button_Click"
+                Content="Run!"
+                FontSize="30" />
+            <Rectangle Height="20" />
+            <userControls:DebugStopwatch x:Name="DbgSt" HorizontalAlignment="Center" />
+        </StackPanel>
     </SelectiveScrollingGrid>
 </Window>

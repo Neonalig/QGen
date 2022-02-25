@@ -1,0 +1,3 @@
+[submodule "MVVMUtils"]
+	path = MVVMUtils
+	url = https://github.com/Neonalig/MVVMUtils

@@ -213,7 +213,9 @@ public partial class MainWindow {
         if ( _Running ) { return; }
         _Running = true;
         Btn.IsEnabled = false;
+        DbgSt.Start();
         Result Res = await TestTwoAsync();
+        DbgSt.Stop();
         Debug.WriteLine($"Test#2 method execution finished {(Res.Success ? "successfully" : "unsuccessfully")} with the result: '{Res.Message}'.");
         Btn.IsEnabled = true;
         _Running = false;
