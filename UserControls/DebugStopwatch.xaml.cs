@@ -8,10 +8,14 @@ using SysWatch = System.Diagnostics.Stopwatch;
 
 namespace QGen.UserControls;
 
+#pragma warning disable IDE0079
+#pragma warning disable CS0078 //Just use a half decent font
+
 /// <summary>
 /// Interaction logic for DebugTimer.xaml
 /// </summary>
 public partial class DebugStopwatch {
+#pragma warning restore IDE0079 // Remove unnecessary suppression
 
     #region Constructors
 
@@ -28,8 +32,8 @@ public partial class DebugStopwatch {
         Started += DS => {
             _ = Dispatcher.Invoke(async () => {
                 DebugStopwatch D = DS!;
-                while ( IsRunning ) {
-                    CurrentTime = D.Stopwatch.Elapsed.ToString(D.TimeFormat);
+                while ( D.IsRunning ) {
+                    D.CurrentTime = GetDisplayString(D.Stopwatch.Elapsed);
                     await Task.Yield();
                 }
             }, DispatcherPriority.ApplicationIdle);
@@ -37,8 +41,33 @@ public partial class DebugStopwatch {
         Stopped += DS => {
             Dispatcher.Invoke(() => {
                 DebugStopwatch D = DS!;
-                CurrentTime = D.Stopwatch.Elapsed.ToString(D.TimeFormat);
+                D.CurrentTime = GetDisplayString(D.Stopwatch.Elapsed);
             }, DispatcherPriority.ApplicationIdle);
+        };
+    }
+
+    static string GetTooltipString( TimeSpan TS ) {
+        long Ticks = TS.Ticks;
+        return Ticks switch {
+            < 10000l                           => $"{Ticks:N0} ticks",
+            < 10000l * 1000l                   => $"{TS.Milliseconds:##0}ms {TS.GetTicks():N0} ticks",
+            < 10000l * 1000l * 60l             => $"{TS.Seconds}s {TS.Milliseconds:##0}ms {TS.GetTicks():N0} ticks",
+            < 10000l * 1000l * 60l * 60l       => $"{TS.Minutes}m {TS.Seconds:#0}s {TS.Milliseconds:##0}ms {TS.GetTicks():N0} ticks",
+            < 10000l * 1000l * 60l * 60l * 24l => $"{TS.Hours}h {TS.Minutes:#0}m {TS.Seconds:#0}s {TS.Milliseconds:##0}ms {TS.GetTicks():N0} ticks",
+            _                                  => $"{TS.Days}d {TS.Hours}h {TS.Minutes:#0}m {TS.Seconds:#0}s {TS.Milliseconds:##0}ms {TS.GetTicks():N0} ticks",
+        };
+    }
+
+    static string GetDisplayString( TimeSpan TS ) {
+        long Ticks = TS.Ticks;
+        return Ticks switch {
+            < 10000l                           => $"{Ticks:N} ticks",
+            < 10000l * 1000l                   => $"{Ticks / 10000:##0.###}ms",
+            < 10000l * 1000l * 10l             => $"{TS.Seconds}s {TS.Milliseconds:000}ms",
+            < 10000l * 1000l * 60l             => $"{TS.Seconds}.{TS.Milliseconds / 10:00}s", //Additional stage to ease readability (appears after first 10 seconds)
+            < 10000l * 1000l * 60l * 60l       => $"{TS.Minutes}m {TS.Seconds:00}s",
+            < 10000l * 1000l * 60l * 60l * 24l => $"{TS.Hours}h {TS.Minutes:00}m {TS.Seconds:00}s",
+            _                                  => $"{TS:g}",
         };
     }
 
@@ -47,27 +76,9 @@ public partial class DebugStopwatch {
     #region Fields / Properties
 
     /// <summary>
-    /// Gets or sets the time format string.
+    /// Gets the current time's tooltip representation.
     /// </summary>
-    /// <value>
-    /// The time format string.
-    /// </value>
-    public string TimeFormat {
-        get => TimeFormatProperty.GetValue(this);
-        set => TimeFormatProperty.SetValue(this, value);
-    }
-
-    /// <summary>
-    /// Default text displayed for <see cref="TimeSpan.Zero"/>.
-    /// </summary>
-    internal string ZeroTime = "00:00.000";
-
-    /// <summary>
-    /// Dependency property for the <see cref="TimeFormat"/> property.
-    /// </summary>
-    public static readonly TypedDependencyProperty<string> TimeFormatProperty = TypedDependencyProperty<string>.Register<DebugStopwatch>("", @"0:s\:fff", (Sender, Format) => ((DebugStopwatch)Sender).ZeroTime = TimeSpan.Zero.ToString(Format.NewValue), nameof(TimeFormat));
-
-    //@"0:s\:fff"
+    public string CurrentTimeTooltip => GetTooltipString(Stopwatch.Elapsed);
 
     /// <summary>
     /// Gets or sets the current time.
@@ -171,6 +182,7 @@ public partial class DebugStopwatch {
         if ( WasRunning ) {
             OnStopped();
         }
+        UpdateDisplay();
     }
 
     #endregion
@@ -263,4 +275,6 @@ public partial class DebugStopwatch {
                 break;
         }
     }
+
+    void UserControl_ToolTipOpening( object Sender, ToolTipEventArgs E ) => ((FrameworkElement)E.Source).ToolTip = CurrentTimeTooltip;
 }

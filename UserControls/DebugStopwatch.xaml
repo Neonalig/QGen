@@ -32,7 +32,9 @@
             VerticalAlignment="Center"
             d:Text="00:00.000"
             Opacity="{Binding IsRunning, Mode=OneWay, Converter={StaticResource BoolToDblConv}}"
-            Text="{Binding CurrentTime, Mode=OneWay}" />
+            Text="{Binding CurrentTime, Mode=OneWay}"
+            ToolTip="0 ticks"
+            ToolTipOpening="UserControl_ToolTipOpening" />
     </Button>
     <!--  Background="{DynamicResource SystemControlPageBackgroundAltHighBrush}"  -->
 </UserControl>

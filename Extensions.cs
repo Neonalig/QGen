@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Windows;
 
 namespace QGen;
+
+#pragma warning disable IDE0079
+#pragma warning disable CS0078 //Just use a half decent font
 
 /// <summary>
 /// General extension methods and shorthand for WPF utilisation.
@@ -73,6 +75,20 @@ public static class Extensions {
 
     /// <inheritdoc cref="TypedDependencyProperty{TBase, T}.Register(T, TBase, T, TypedPropertyChangedCallback{T}, TypedCoerceValueCallback{T}, string)"/>
     public static TypedDependencyProperty<TBase, T> Register<TBase, T>( this TBase DependencyObject, T Property, T DefaultValue, TypedPropertyChangedCallback<T> PropertyChangedCallback, TypedCoerceValueCallback<T> CoerceValueCallback, [CallerArgumentExpression("Property")] string PropertyName = "" ) where TBase : DependencyObject => TypedDependencyProperty<TBase, T>.Register(Property, DependencyObject, DefaultValue, PropertyChangedCallback, CoerceValueCallback, PropertyName);
+
+    /// <summary>
+    /// Gets the non-total ticks in the timespan.
+    /// </summary>
+    /// <param name="TS">The timespan.</param>
+    /// <returns>The non-total number of ticks.</returns>
+    public static long GetTicks( this TimeSpan TS ) {
+        long Major =   TS.Days         * 10000l * 1000l * 60l * 60l * 24l
+                     + TS.Hours        * 10000l * 1000l * 60l * 60l
+                     + TS.Minutes      * 10000l * 1000l * 60l
+                     + TS.Seconds      * 10000l * 1000l
+                     + TS.Milliseconds * 10000l;
+        return TS.Ticks - Major;
+    }
 }
 
 public interface ITypedDependencyProperty<T> {

@@ -81,7 +81,7 @@ internal class FileGenerator {
                 string MT = M.Groups["Name"].Value; //Just the match value ;; i.e. 'ValName'
                 //Debug.WriteLine($"From '{Line}', captured '{T}' (Name '{MT}').");
 
-                Line.Split(M.Index, M.Length, out string? Prior, out string? Match, out string? Next);
+                Line.Split(M.Index, M.Length, out string? Prior, out _, out string? Next);
                 if ( Prior is not null ) { yield return Prior; }
                 //Debug.WriteLine($"\t'{Prior ?? "<null>"}';;'{Match ?? "<null>"}';;'{Next ?? "<null>"}'");
 
